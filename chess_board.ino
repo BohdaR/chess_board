@@ -215,6 +215,21 @@ void resetPositionDynamics() {
   PositionDynamics.moveTypes.checkmate = false;
 }
 
+void verifyStartPosition() {
+  for(int i = 0; i < 64; i++ ){
+    float channelValue = readMux(i);
+    if (channelValue < 3.0 && BIT_BOARD[i] != EMPTY) {
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print(getSquare(i)); 
+      lcd.print(" is missing!"); 
+      i--;
+      delay(50);
+    }
+  }
+  return;
+}
+
 void setup() {
   pinMode(s0, OUTPUT); 
   pinMode(s1, OUTPUT); 
@@ -235,7 +250,9 @@ void setup() {
   lcd.backlight();      // Make sure backlight is on
   
   // Print a message on both lines of the LCD.
+  verifyStartPosition();
   lcd.setCursor(0,0);   //Set cursor to character 2 on line 0
+  delay(1000);
   lcd.print("White to move!");
 }
 
