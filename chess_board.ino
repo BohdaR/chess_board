@@ -219,7 +219,7 @@ bool isOnTheSameFile(byte firstSquare, byte secondSquare) {
 // move validation
 
 bool isPseudoLegalKnightMove(byte fromSquare, byte toSquare) {
-  const byte knightMoveOffsets[] = {17, -17, 15, -15, 10, -10, 6, -6};
+  const int knightMoveOffsets[] = {17, -17, 15, -15, 10, -10, 6, -6};
   
   // Check if the destination square is reachable from the source square
   for (int offset : knightMoveOffsets) {
@@ -283,7 +283,7 @@ bool isPseudoLegalPawnMove(byte fromSquare, byte toSquare) {
 }
 
 bool isPseudoLegalKingMove(byte fromSquare, byte toSquare) {
-  const byte kingMoveOffsets[] = {1, -1, 8, -8, 7, -7, 9, -9};
+  const int kingMoveOffsets[] = {1, -1, 8, -8, 7, -7, 9, -9};
   
   // Check if the destination square is reachable from the source square
   for (int offset : kingMoveOffsets) {
@@ -387,6 +387,166 @@ bool isPseudoLegalMove(byte fromSquare, byte toSquare) {
       return isPseudoLegalKingMove(fromSquare, toSquare);
   }
   return isValid;
+}
+
+bool canAttackTheKing(byte pieceSquare, byte kingSquare) {
+  // check if on the target squere a piece of the same color
+  if ((BIT_BOARD[pieceSquare] & 3) == (BIT_BOARD[kingSquare] & 3)) {
+    return false;
+  }
+
+  byte piece = BIT_BOARD[pieceSquare] & 252; // here we take only 6 bit of piece 'cause firt 2 bits are used for piece color
+   switch (piece) {
+    case BISHOP:
+      return isPseudoLegalBishopMove(pieceSquare, kingSquare);
+    case QUEEN:
+      return isPseudoLegalQueenMove(pieceSquare, kingSquare);
+    case ROOK:
+      return isPreudoLegalRookMove(pieceSquare, kingSquare);
+    case PAWN:
+      if ((kingSquare == pieceSquare + 7 || kingSquare == pieceSquare + 9) && (BIT_BOARD[kingSquare] & BLACK)) {
+        return true;
+      }
+      if ((kingSquare == pieceSquare - 7 || kingSquare == pieceSquare - 9) && (BIT_BOARD[kingSquare] & WHITE)) {
+        return true;
+      }
+      break;
+    case KNIGHT:
+      return isPseudoLegalKnightMove(pieceSquare, kingSquare);
+    case KING:
+      return isPseudoLegalKingMove(pieceSquare, kingSquare);
+  }
+  return false;
+}
+
+int checksNumber(byte kingPosition) {
+  int checkCount = 0;
+  byte king = BIT_BOARD[kingPosition];
+  byte kingColor = BIT_BOARD[kingPosition] & 3;
+  int kingFile = kingPosition % 8;
+  int kingRank = kingPosition / 8;
+
+  const int UP = 1;
+  const int DOWN = -1;
+  const int DIRECTIONS[] = {UP, DOWN};
+
+  // Check along the same rank (left and right)
+  for (int direction : DIRECTIONS) {
+    int loopEnd = (direction == DOWN) ? kingFile + 1 : 8 - kingFile;
+    for (int i = 1; i < loopEnd; i++) {
+      int enemyPiecePosition = kingPosition + i * direction;
+
+      if (BIT_BOARD[enemyPiecePosition]) {
+        if ((BIT_BOARD[enemyPiecePosition] & 3) != kingColor) {
+          if (canAttackTheKing(enemyPiecePosition, kingPosition)) {
+            checkCount++;
+          }
+        }
+        break;  // Break even if it's the same color
+      }
+    }
+  }
+
+  // check if there is an enemy piece on the same file
+  for (int direction : DIRECTIONS) {
+    int loopEnd = (direction == DOWN) ? kingRank + 1 : 8 - kingRank;
+    for (int i = 1; i < loopEnd; i++) {
+      int enemyPiecePosition = kingPosition + i * direction * 8;
+
+      if (BIT_BOARD[enemyPiecePosition]) {
+        if ((BIT_BOARD[enemyPiecePosition] & 3) != kingColor) {
+          if (canAttackTheKing(enemyPiecePosition, kingPosition)) {
+            checkCount++;
+          }
+        }
+        break;  // Break even if it's the same color
+      }
+    }
+  }
+  
+  // check if there is an enemy piece on the same first diagonal
+  for (int direction : DIRECTIONS) {
+    int upLoopEnd = 1 + ((kingFile < kingRank) ? kingFile : kingRank);
+    int downLoopEnd = 8 - ((kingFile > kingRank) ? kingFile : kingRank);
+    int loopEnd = (direction == DOWN) ? downLoopEnd : upLoopEnd;
+    for (int i = 1; i < loopEnd; i++) {
+      int enemyPiecePosition = kingPosition + i * direction * 9;
+
+      if (BIT_BOARD[enemyPiecePosition]) {
+        if ((BIT_BOARD[enemyPiecePosition] & 3) != kingColor) {
+          if (canAttackTheKing(enemyPiecePosition, kingPosition)) {
+            checkCount++;
+          }
+        }
+        break;  // Break even if it's the same color
+      }
+    }
+  }
+
+  // check if there is an enemy piece on the same second diagonal
+  for (int direction : DIRECTIONS) {
+    int upLoopEnd = 1 + ((kingFile < kingRank) ? kingFile : kingRank);
+    int downLoopEnd = 8 - ((kingFile > kingRank) ? kingFile : kingRank);
+    int loopEnd = (direction == DOWN) ? upLoopEnd : downLoopEnd;
+    for (int i = 1; i < loopEnd; i++) {
+      int enemyPiecePosition = kingPosition + i * direction * 7;
+
+      if (BIT_BOARD[enemyPiecePosition]) {
+        if ((BIT_BOARD[enemyPiecePosition] & 3) != kingColor) {
+          if (canAttackTheKing(enemyPiecePosition, kingPosition)) {
+            checkCount++;
+          }
+        }
+        break;  // Break even if it's the same color
+      }
+    }
+  }
+
+  // check if there is an enemy knight to give a check
+  const int knightMoveOffsets[] = {17, -17, 15, -15, 10, -10, 6, -6};
+  
+  // Check if the destination square is reachable from the source square
+  for (int offset : knightMoveOffsets) {
+    int enemyPiecePosition = kingPosition + offset;
+    if (BIT_BOARD[enemyPiecePosition]) {
+      if ((BIT_BOARD[enemyPiecePosition] & 3) != kingColor) {
+        if (canAttackTheKing(enemyPiecePosition, kingPosition)) {
+          checkCount++;
+        }
+      }
+    }
+  }
+
+  return checkCount;
+}
+
+bool isKingInCheck(int kingPosition) {
+  return checksNumber(kingPosition) > 0;
+}
+
+bool kingHasLegalMoves(int kingPosition) {
+  const int kingMoveOffsets[] = {1, -1, 8, -8, 7, -7, 9, -9};
+  for (int offset : kingMoveOffsets) {
+    int testPosition = kingPosition + offset;
+    if (isPseudoLegalMove(kingPosition, testPosition)) {
+      if (!(isKingInCheck(kingPosition))) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+bool isCheckMate(byte kingPosition) {
+  if (!(isKingInCheck(kingPosition))) {
+    return false;
+  }
+
+  if (checksNumber(kingPosition) > 1 && !kingHasLegalMoves(kingPosition)) {
+    return true;
+  }
+
+  return false;
 }
 
 void makeMove(byte fromSquare, byte toSquare, MOVE_TYPES moveTypes) {
