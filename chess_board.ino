@@ -183,6 +183,212 @@ String getMoveNotation(byte fromSquare, byte toSquare, MOVE_TYPES moveTypes) {
   return square;
 }
 
+// new functionality
+
+byte whiteKingSquare = WHITE_KING_START_SQUARE;
+byte blackKingSquare = BLACK_KING_START_SQUARE;
+
+byte getSquareColor(byte square) {
+  // return 0 for black square and 1 for white square
+  return (square % 8 + square / 8) % 2;
+}
+
+bool isOnTheSameDiagonal(byte firstSquare, byte secondSquare) {
+  // check whether two pieces on the same diagonal such as a1-h8
+  return abs(firstSquare / 8 - secondSquare / 8) == abs(firstSquare % 8 - secondSquare % 8);
+}
+
+bool isOnTheSameFirstDiagonal(byte firstSquare, byte secondSquare) {
+  // check whether two pieces on the same diagonal such as a1-h8
+  return isOnTheSameDiagonal(firstSquare, secondSquare) && firstSquare % 9 == secondSquare % 9;
+}
+
+bool isOnTheSameSecondDiagonal(byte firstSquare, byte secondSquare) {
+  // check whether two pieces on the same diagonal such as h1-a8
+  return isOnTheSameDiagonal(firstSquare, secondSquare) && firstSquare % 7 == secondSquare % 7;
+}
+
+bool isOnTheSameRank(byte firstSquare, byte secondSquare) {
+  return (firstSquare / 8) == (secondSquare / 8);
+}
+
+bool isOnTheSameFile(byte firstSquare, byte secondSquare) {
+  return (firstSquare % 8) == (secondSquare % 8);
+}
+
+// move validation
+
+bool isPseudoLegalKnightMove(byte fromSquare, byte toSquare) {
+  const byte knightMoveOffsets[] = {17, -17, 15, -15, 10, -10, 6, -6};
+  
+  // Check if the destination square is reachable from the source square
+  for (int offset : knightMoveOffsets) {
+    if (toSquare == fromSquare + offset) {
+      return true;
+    }
+  }
+
+  // If no matching offset is found, the move is not pseudo-legal
+  return false;
+}
+
+bool isPseudoLegalWhitePawnMove(byte fromSquare, byte toSquare) {
+  byte pawn = BIT_BOARD[fromSquare];
+  byte target = BIT_BOARD[toSquare];
+
+  if ((toSquare == fromSquare + 7 || toSquare == fromSquare + 9) && PositionDynamics.enpassantSquare == toSquare) {
+    return true;
+  }
+  
+  if ((toSquare == fromSquare + 7 || toSquare == fromSquare + 9) && (target & BLACK)) {
+    return true;
+  }
+
+  if (BIT_BOARD[fromSquare + 8] == EMPTY) {
+    if (toSquare == fromSquare + 8 || (getRankNumber(fromSquare) == 2 && toSquare == fromSquare + 16)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool isPseudoLegalBlackPawnMove(byte fromSquare, byte toSquare) {
+  byte pawn = BIT_BOARD[fromSquare];
+  byte target = BIT_BOARD[toSquare];
+
+  if ((toSquare == fromSquare - 7 || toSquare == fromSquare - 9) && PositionDynamics.enpassantSquare == toSquare) {
+    return true;
+  }
+  
+  if ((toSquare == fromSquare - 7 || toSquare == fromSquare - 9) && (target & BLACK)) {
+    return true;
+  }
+
+  if (BIT_BOARD[fromSquare-+ 8] == EMPTY) {
+    if (toSquare == fromSquare - 8 || (getRankNumber(fromSquare) == 7 && toSquare == fromSquare - 16)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool isPseudoLegalPawnMove(byte fromSquare, byte toSquare) {
+  switch (PositionDynamics.whosMove) {
+    case WHITE:
+      return isPseudoLegalWhitePawnMove(fromSquare, toSquare);
+    case BLACK:
+      return isPseudoLegalBlackPawnMove(fromSquare, toSquare);
+  }
+  return false;
+}
+
+bool isPseudoLegalKingMove(byte fromSquare, byte toSquare) {
+  const byte kingMoveOffsets[] = {1, -1, 8, -8, 7, -7, 9, -9};
+  
+  // Check if the destination square is reachable from the source square
+  for (int offset : kingMoveOffsets) {
+    if (toSquare == fromSquare + offset) {
+      return true;
+    }
+  }
+
+  // If no matching offset is found, the move is not pseudo-legal
+  return false;
+}
+
+bool isPseudoLegalBishopMove(byte fromSquare, byte toSquare) {
+  if (isOnTheSameFirstDiagonal(fromSquare, toSquare)) {
+    int loopEnd = abs(fromSquare / 8 - toSquare / 8);
+    int lookUpDirection = (fromSquare > toSquare) ? -1 : 1;
+
+    for (int i = 1; i < loopEnd; i++) {
+      if (BIT_BOARD[fromSquare + i * 9 * lookUpDirection]) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  if (isOnTheSameSecondDiagonal(fromSquare, toSquare)) {
+    int loopEnd = abs(fromSquare / 8 - toSquare / 8);
+    int lookUpDirection = (fromSquare > toSquare) ? -1 : 1;
+
+    for (int i = 1; i < loopEnd; i++) {
+      if (BIT_BOARD[fromSquare + i * 7 * lookUpDirection]) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  return false;
+}
+
+bool isPreudoLegalRookMove(byte fromSquare, byte toSquare) {
+  if (isOnTheSameFile(fromSquare, toSquare)) {
+    int rookRankIndex = fromSquare / 8;
+    int targetRankIndex = toSquare / 8;
+
+    int loopEnd = abs(rookRankIndex - targetRankIndex);
+    int lookUpDirection = (fromSquare > toSquare) ? -1 : 1;
+
+    for (int i = 1; i < loopEnd; i++) {
+      if (BIT_BOARD[fromSquare + i * 8 * lookUpDirection]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  if (isOnTheSameRank(fromSquare, toSquare)) {
+    int rookFileIndex = fromSquare % 8;
+    int targetFileIndex = toSquare % 8;
+
+    int loopEnd = abs(rookFileIndex - targetFileIndex);
+    int lookUpDirection = (fromSquare > toSquare) ? -1 : 1;
+
+    for (int i = 1; i < loopEnd; i++) {
+      if (BIT_BOARD[fromSquare + i * lookUpDirection]) {
+        return false;
+      }
+    }
+    return true;
+  }
+  return false;
+}
+
+bool isPseudoLegalQueenMove(byte fromSquare, byte toSquare) {
+  return isPseudoLegalBishopMove(fromSquare, toSquare) || isPreudoLegalRookMove(fromSquare, toSquare);
+}
+
+bool isPseudoLegalMove(byte fromSquare, byte toSquare) {
+  // check if on the target squere a piece of the same color
+  if ((BIT_BOARD[toSquare] & 3) == (BIT_BOARD[fromSquare] & 3)) {
+    return false;
+  }
+
+  // Pseudo-legal moves may still be illegal if they leave the own king in check
+  byte piece = BIT_BOARD[fromSquare] & 252; // here we take only 6 bit of piece 'cause firt 2 bits are used for piece color
+  bool isValid = false;
+   switch (piece) {
+    case BISHOP:
+      return isPseudoLegalBishopMove(fromSquare, toSquare);
+    case QUEEN:
+      return isPseudoLegalQueenMove(fromSquare, toSquare);
+    case ROOK:
+      return isPreudoLegalRookMove(fromSquare, toSquare);
+    case PAWN:
+      return isPseudoLegalPawnMove(fromSquare, toSquare);
+    case KNIGHT:
+      return isPseudoLegalKnightMove(fromSquare, toSquare);
+    case KING:
+      return isPseudoLegalKingMove(fromSquare, toSquare);
+  }
+  return isValid;
+}
+
 void makeMove(byte fromSquare, byte toSquare, MOVE_TYPES moveTypes) {
   String moveNotation = getMoveNotation(fromSquare, toSquare, moveTypes);
 
