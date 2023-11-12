@@ -110,12 +110,12 @@ byte getRankNumber(byte squareIndex) {
   return squareIndex / 8 + 1;
 }
 
-byte getPieceColor(byte squareIndex) {
-  return BIT_BOARD[squareIndex] & 3; // we take first 2 bits which are use for piece color
+byte getPieceColor(byte piece) {
+  return piece & 3; // we take first 2 bits which are use for piece color
 }
 
-String getPieceLatter(byte squareIndex) {
-  byte piece = BIT_BOARD[squareIndex] & 252; // here we take only 6 bit of piece 'cause firt 2 bits are used for piece color
+String getPieceLatter(byte piece) {
+  piece = piece & 252; // here we take only 6 bit of piece 'cause firt 2 bits are used for piece color
   switch (piece) {
     case PAWN:
       return "";
@@ -156,8 +156,8 @@ String getSquare(byte squareIndex) {
 }
 
 String getMoveNotation(byte fromSquare, byte toSquare, MOVE_TYPES moveTypes) {
-  byte piece = BIT_BOARD[fromSquare];
-  String square = getPieceLatter(fromSquare) + getSquare(toSquare);
+  byte piece = BIT_BOARD[toSquare];
+  String square = getPieceLatter(piece) + getSquare(toSquare);
 
   if (moveTypes.capture) {
     if (piece & PAWN) {
@@ -260,11 +260,11 @@ bool isPseudoLegalBlackPawnMove(byte fromSquare, byte toSquare) {
     return true;
   }
   
-  if ((toSquare == fromSquare - 7 || toSquare == fromSquare - 9) && (target & BLACK)) {
+  if ((toSquare == fromSquare - 7 || toSquare == fromSquare - 9) && (target & WHITE)) {
     return true;
   }
 
-  if (BIT_BOARD[fromSquare-+ 8] == EMPTY) {
+  if (BIT_BOARD[fromSquare - 8] == EMPTY) {
     if (toSquare == fromSquare - 8 || (getRankNumber(fromSquare) == 7 && toSquare == fromSquare - 16)) {
       return true;
     }
@@ -391,7 +391,7 @@ bool isPseudoLegalMove(byte fromSquare, byte toSquare) {
 
 bool canAttackTheKing(byte pieceSquare, byte kingSquare) {
   // check if on the target squere a piece of the same color
-  if ((BIT_BOARD[pieceSquare] & 3) == (BIT_BOARD[kingSquare] & 3)) {
+  if ((BIT_BOARD[pieceSquare] & 3) == (BIT_BOARD[kingSquare] & 3) || pieceSquare > 64) {
     return false;
   }
 
@@ -466,10 +466,10 @@ int checksNumber(byte kingPosition) {
   
   // check if there is an enemy piece on the same first diagonal
   for (int direction : DIRECTIONS) {
-    int upLoopEnd = 1 + ((kingFile < kingRank) ? kingFile : kingRank);
-    int downLoopEnd = 8 - ((kingFile > kingRank) ? kingFile : kingRank);
+    int upLoopEnd = (kingFile > kingRank) ? kingFile : kingRank;
+    int downLoopEnd = 8 - ((kingFile < kingRank) ? kingFile : kingRank);
     int loopEnd = (direction == DOWN) ? downLoopEnd : upLoopEnd;
-    for (int i = 1; i < loopEnd; i++) {
+    for (int i = 1; i <= loopEnd; i++) {
       int enemyPiecePosition = kingPosition + i * direction * 9;
 
       if (BIT_BOARD[enemyPiecePosition]) {
@@ -485,10 +485,10 @@ int checksNumber(byte kingPosition) {
 
   // check if there is an enemy piece on the same second diagonal
   for (int direction : DIRECTIONS) {
-    int upLoopEnd = 1 + ((kingFile < kingRank) ? kingFile : kingRank);
+    int upLoopEnd = (kingFile < kingRank) ? kingFile : kingRank;
     int downLoopEnd = 8 - ((kingFile > kingRank) ? kingFile : kingRank);
     int loopEnd = (direction == DOWN) ? upLoopEnd : downLoopEnd;
-    for (int i = 1; i < loopEnd; i++) {
+    for (int i = 1; i <= loopEnd; i++) {
       int enemyPiecePosition = kingPosition + i * direction * 7;
 
       if (BIT_BOARD[enemyPiecePosition]) {
@@ -550,24 +550,47 @@ bool isCheckMate(byte kingPosition) {
 }
 
 void makeMove(byte fromSquare, byte toSquare, MOVE_TYPES moveTypes) {
-  String moveNotation = getMoveNotation(fromSquare, toSquare, moveTypes);
-
   updatePosition(fromSquare, toSquare);
-
   lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print(moveNotation);
+  if (BIT_BOARD[toSquare] & KING) {
+    if (BIT_BOARD[toSquare] & WHITE) {
+      whiteKingSquare = toSquare;
+    }
+    else {
+      blackKingSquare = toSquare;
+    }
+  }
 
   if (PositionDynamics.whosMove == WHITE) {
+    if (BIT_BOARD[toSquare] & PAWN && toSquare / 8 == 7) {
+      BIT_BOARD[toSquare] = WHITE_QUEEN;
+      moveTypes.promotion = true;
+    }
+    if (BIT_BOARD[toSquare] & PAWN && (toSquare - fromSquare) == 16) {
+      PositionDynamics.enpassantSquare = toSquare - 8;
+    }
+    moveTypes.check = isKingInCheck(blackKingSquare);
     PositionDynamics.whosMove = BLACK;
-    lcd.setCursor(0, 1);
+    lcd.setCursor(0, 0);
     lcd.print("Black to move!");
   }
   else {
-    lcd.setCursor(0, 1);
+    if (BIT_BOARD[toSquare] & PAWN && toSquare / 8 == 0) {
+      BIT_BOARD[toSquare] = BLACK_QUEEN;
+      moveTypes.promotion = true;
+    }
+    if (BIT_BOARD[toSquare] & PAWN && (fromSquare - toSquare) == 16) {
+      PositionDynamics.enpassantSquare = toSquare + 8;
+    }
+    moveTypes.check = isKingInCheck(whiteKingSquare);
+    lcd.setCursor(0, 0);
     lcd.print("White to move!");
     PositionDynamics.whosMove = WHITE;
   }
+
+  String moveNotation = getMoveNotation(fromSquare, toSquare, moveTypes);
+  lcd.setCursor(0, 1);
+  lcd.print(moveNotation);
 
   resetPositionDynamics();
 }
@@ -625,14 +648,12 @@ void setup() {
 void loop() {
   for(int i = 0; i < 64; i++ ){
     float channelValue = readMux(i);
-    if (channelValue < 3.0 && BIT_BOARD[i] != EMPTY && PositionDynamics.pickedSquare != i) {
+    if (channelValue < 3.0 && BIT_BOARD[i] && PositionDynamics.pickedSquare != i && PositionDynamics.attackedPieceSquare != i) {
       // enemy piece is picked
       if (!(BIT_BOARD[i] & PositionDynamics.whosMove)) {
         PositionDynamics.moveTypes.capture = true;
         PositionDynamics.attackedPieceSquare = i;
-        String squareWithPiece = getPieceLatter(i) + getSquare(i);
-        // remove enemy piece from the board
-        clearSquare(i);
+        String squareWithPiece = getPieceLatter(BIT_BOARD[i]) + getSquare(i);
 
         lcd.clear();
         lcd.setCursor(0, 0);
@@ -642,15 +663,29 @@ void loop() {
       }
       // piece is picked
       PositionDynamics.pickedSquare = i;
-      String squareWithPiece = getPieceLatter(i) + getSquare(i);
+      String squareWithPiece = getPieceLatter(BIT_BOARD[i]) + getSquare(i);
       
       lcd.clear();
       lcd.setCursor(0, 0);
       lcd.print(squareWithPiece); 
       lcd.print(" is picked!"); 
     }
-    if (channelValue > 3.0 && BIT_BOARD[i] == EMPTY) {
-      makeMove(PositionDynamics.pickedSquare, i, PositionDynamics.moveTypes);
+    if (channelValue > 3.0 && (BIT_BOARD[i] == EMPTY || PositionDynamics.attackedPieceSquare == i)) {
+      if (isPseudoLegalMove(PositionDynamics.pickedSquare, i)) {
+        if (PositionDynamics.whosMove == WHITE && (PositionDynamics.attackedPieceSquare + 8) == i) {
+          clearSquare(PositionDynamics.attackedPieceSquare);
+        }
+        if (PositionDynamics.whosMove == BLACK && (PositionDynamics.attackedPieceSquare - 8) == i) {
+          clearSquare(PositionDynamics.attackedPieceSquare);
+        }
+        PositionDynamics.enpassantSquare = -1;
+        makeMove(PositionDynamics.pickedSquare, i, PositionDynamics.moveTypes);
+      }
+      else {
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Illegal move!"); 
+      }
     }
   }
 }
