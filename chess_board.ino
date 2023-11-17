@@ -224,79 +224,64 @@ bool withingTheBoard(int square) {
 // move validation
 
 bool isPseudoLegalKnightMove(int fromSquare, int toSquare) {
-    const int knightMoveOffsets[] = {17, -17, 15, -15, 10, -10, 6, -6};
+    int fromRank = fromSquare / 8;
+    int toRank = toSquare / 8;
+    int fromFile = fromSquare % 8;
+    int toFile = toSquare % 8;
+
+    int rankDiff = abs(fromRank - toRank);
+    int fileDiff = abs(fromFile - toFile);
 
     // Check if the destination square is reachable from the source square
-    for (int offset: knightMoveOffsets) {
-        if (withingTheBoard(fromSquare + offset)) {
-            if (toSquare == fromSquare + offset) {
-                return true;
-            }
-        }
+    if ((rankDiff == 2 && fileDiff == 1) || (rankDiff == 1 && fileDiff == 2)) {
+        return withingTheBoard(toSquare);
     }
 
     // If no matching offset is found, the move is not pseudo-legal
     return false;
 }
 
-bool isPseudoLegalWhitePawnMove(int fromSquare, int toSquare) {
-    int target = BIT_BOARD[toSquare];
-
-    if ((toSquare == fromSquare + 7 || toSquare == fromSquare + 9) && PositionDynamics.enPassantSquare == toSquare) {
-        return true;
-    }
-
-    if ((toSquare == fromSquare + 7 || toSquare == fromSquare + 9) && (target & BLACK)) {
-        return true;
-    }
-
-    if (BIT_BOARD[fromSquare + 8] == EMPTY) {
-        if (toSquare == fromSquare + 8 || (getRankNumber(fromSquare) == 2 && toSquare == fromSquare + 16)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-bool isPseudoLegalBlackPawnMove(int fromSquare, int toSquare) {
-    int target = BIT_BOARD[toSquare];
-
-    if ((toSquare == fromSquare - 7 || toSquare == fromSquare - 9) && PositionDynamics.enPassantSquare == toSquare) {
-        return true;
-    }
-
-    if ((toSquare == fromSquare - 7 || toSquare == fromSquare - 9) && (target & WHITE)) {
-        return true;
-    }
-
-    if (BIT_BOARD[fromSquare - 8] == EMPTY) {
-        if (toSquare == fromSquare - 8 || (getRankNumber(fromSquare) == 7 && toSquare == fromSquare - 16)) {
-            return true;
-        }
-    }
-    return false;
-}
-
 bool isPseudoLegalPawnMove(int fromSquare, int toSquare) {
-    switch (PositionDynamics.whoseMove) {
-        case WHITE:
-            return isPseudoLegalWhitePawnMove(fromSquare, toSquare);
-        case BLACK:
-            return isPseudoLegalBlackPawnMove(fromSquare, toSquare);
+    int rankDifference = (toSquare / 8) - (fromSquare / 8);
+    int fileDifference = (toSquare % 8) - (fromSquare % 8);
+    int target = BIT_BOARD[toSquare];
+    int pawn = BIT_BOARD[fromSquare];
+    if (pawn & WHITE && !target) {
+        if (rankDifference == 1 && fileDifference == 0) {
+            return true;  // Move one square forward
+        }
+        if (fromSquare / 8 == 1 && rankDifference == 2 && fileDifference == 0 && !BIT_BOARD[toSquare - 8]) {
+            return true;  // Move two squares forward from the starting position
+        }
+    }
+    if (pawn & BLACK && !target) {
+        if (rankDifference == -1 && fileDifference == 0) {
+            return true;  // Move one square forward
+        }
+        if (fromSquare / 8 == 6 && rankDifference == -2 && fileDifference == 0 && !BIT_BOARD[toSquare + 8]) {
+            return true;  // Move two squares forward from the starting position
+        }
+    }
+    if ((pawn & WHITE) && rankDifference == 1 && abs(fileDifference) == 1 &&
+        ((target & BLACK) || toSquare == PositionDynamics.enPassantSquare)) {
+        return true;
+    }
+    if ((pawn & BLACK) && rankDifference == -1 && abs(fileDifference) == 1 &&
+        ((target & WHITE) || toSquare == PositionDynamics.enPassantSquare)) {
+        return true;
     }
     return false;
 }
 
 bool isPseudoLegalKingMove(int fromSquare, int toSquare) {
-    const int kingMoveOffsets[] = {1, -1, 8, -8, 7, -7, 9, -9};
+    int fromRank = fromSquare / 8;
+    int toRank = toSquare / 8;
+    int fromFile = fromSquare % 8;
+    int toFile = toSquare % 8;
 
     // Check if the destination square is reachable from the source square
-    for (int offset: kingMoveOffsets) {
-        if (withingTheBoard(fromSquare + offset)) {
-            if (toSquare == fromSquare + offset) {
-                return true;
-            }
-        }
+    if (abs(fromRank - toRank) <= 1 && abs(fromFile - toFile) <= 1) {
+        return withingTheBoard(toSquare);
     }
 
     // If no matching offset is found, the move is not pseudo-legal
@@ -421,6 +406,9 @@ bool canAttackTheKing(int pieceSquare, int kingSquare) {
 
     int piece = BIT_BOARD[pieceSquare] &
                  252; // here we take only 6 bit of piece 'cause first 2 bits are used for piece color
+    int rankDifference = (kingSquare / 8) - (pieceSquare / 8);
+    int fileDifference = (kingSquare % 8) - (pieceSquare % 8);
+
     switch (piece) {
         case BISHOP:
             return isPseudoLegalBishopMove(pieceSquare, kingSquare);
@@ -429,10 +417,10 @@ bool canAttackTheKing(int pieceSquare, int kingSquare) {
         case ROOK:
             return isPseudoLegalRookMove(pieceSquare, kingSquare);
         case PAWN:
-            if ((kingSquare == pieceSquare + 7 || kingSquare == pieceSquare + 9) && (BIT_BOARD[kingSquare] & BLACK)) {
+            if ((BIT_BOARD[kingSquare] & WHITE) && rankDifference == -1 && abs(fileDifference) == 1) {
                 return true;
             }
-            if ((kingSquare == pieceSquare - 7 || kingSquare == pieceSquare - 9) && (BIT_BOARD[kingSquare] & WHITE)) {
+            if ((BIT_BOARD[kingSquare] & BLACK) && rankDifference == 1 && abs(fileDifference) == 1) {
                 return true;
             }
             break;
