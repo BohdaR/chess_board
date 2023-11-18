@@ -491,15 +491,17 @@ bool isKingInCheck(int kingPosition) {
 }
 
 bool isLegalMove(int fromSquare, int toSquare, int ownKingSquare) {
+    bool isLegal = false;
     Piece fromSquarePiece = BIT_BOARD[fromSquare];
     Piece toSquarePiece = BIT_BOARD[toSquare];
-    BIT_BOARD[fromSquare] = EMPTY;
-    BIT_BOARD[toSquare] = fromSquarePiece;
     if (isPseudoLegalMove(fromSquare, toSquare)) {
-        BIT_BOARD[fromSquare] = fromSquarePiece;
-        BIT_BOARD[toSquare] = toSquarePiece;
-        return isKingInCheck(ownKingSquare);
+        BIT_BOARD[fromSquare] = EMPTY;
+        BIT_BOARD[toSquare] = fromSquarePiece;
+        isLegal = !isKingInCheck(ownKingSquare);
     }
+    BIT_BOARD[fromSquare] = fromSquarePiece;
+    BIT_BOARD[toSquare] = toSquarePiece;
+    return isLegal;  // The move is not legal
 }
 
 bool canBlockFileCheck(int pieceSquare, int kingSquare, int attackingPieceSquare) {
@@ -951,6 +953,7 @@ bool canBlockSecondDiagonalCheck(int pieceSquare, int kingSquare, int attackingP
 
 bool kingHasLegalMoves(int kingPosition) {
     const int kingMoveOffsets[] = {1, -1, 8, -8, 7, -7, 9, -9};
+    Piece king = BIT_BOARD[kingPosition];
     for (int offset: kingMoveOffsets) {
         int testPosition = kingPosition + offset;
         Piece testPiece = BIT_BOARD[testPosition];
@@ -958,13 +961,15 @@ bool kingHasLegalMoves(int kingPosition) {
             continue;
         }
         if (isPseudoLegalMove(kingPosition, testPosition)) {
-            updatePosition(kingPosition, testPosition);
+            BIT_BOARD[kingPosition] = EMPTY;
+            BIT_BOARD[testPosition] = king;
             if (!(isKingInCheck(testPosition))) {
-                updatePosition(testPosition, kingPosition);
+                BIT_BOARD[kingPosition] = king;
                 BIT_BOARD[testPosition] = testPiece;
                 return true;
             }
-            updatePosition(testPosition, kingPosition);
+            BIT_BOARD[kingPosition] = king;
+            BIT_BOARD[testPosition] = testPiece;
         }
     }
     return false;
@@ -1001,7 +1006,7 @@ bool isCheckMate(int kingPosition) {
                 return false;
             }
 
-            if (checkInformation.knightCheck && isPseudoLegalMove(i, checkInformation.checkingPieceSquare)) {
+            if (checkInformation.knightCheck && isLegalMove(i, checkInformation.checkingPieceSquare, kingPosition)) {
                 return false;
             }
         }
@@ -1143,13 +1148,10 @@ bool isKnightCheck(int kingPosition) {
 
 int main() {
     whiteKingSquare = 4;
-    updatePosition(13, 14);
-    updatePosition(15, 14);
-    updatePosition(0, 12);
-    updatePosition(56, 20);
-    updatePosition(59, 22);
+    updatePosition(1, 50);
+//    std::cout << isLegalMove(59, 50, blackKingSquare) << "\n";
 
-//    std::cout << isPseudoLegalKingMove(7, 0);
-    std::cout << isCheckMate(whiteKingSquare);
-//    std::cout << isCheckMate(whiteKingSquare);
+    std::cout << isKingInCheck(blackKingSquare);
+    PositionDynamics.whoseMove = BLACK;
+
 }
