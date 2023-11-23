@@ -49,18 +49,20 @@ bool canAttackTheKing(int pieceSquare, int kingSquare) {
 CheckInformation getChecksInformation(int kingPosition) {
     CheckInformation checksInformation;
     int kingColor = BIT_BOARD[kingPosition] & 3;
-    int kingFile = kingPosition % 8;
-    int kingRank = kingPosition / 8;
 
     const int UP = 1;
     const int DOWN = -1;
     const int DIRECTIONS[] = {UP, DOWN};
+    const int loopEnd = 7;
 
     // Check along the same rank (left and right)
     for (int direction: DIRECTIONS) {
-        int loopEnd = (direction == DOWN) ? kingFile + 1 : 8 - kingFile;
-        for (int i = 1; i < loopEnd; i++) {
+        for (int i = 1; i <= loopEnd; i++) {
             int enemyPiecePosition = kingPosition + i * direction;
+
+            if (!withingTheBoard(enemyPiecePosition)) {
+                break;
+            }
 
             if (BIT_BOARD[enemyPiecePosition]) {
                 if ((BIT_BOARD[enemyPiecePosition] & 3) != kingColor) {
@@ -78,9 +80,12 @@ CheckInformation getChecksInformation(int kingPosition) {
 
     // check if there is an enemy piece on the same file
     for (int direction: DIRECTIONS) {
-        int loopEnd = (direction == DOWN) ? kingRank + 1 : 8 - kingRank;
-        for (int i = 1; i < loopEnd; i++) {
+        for (int i = 1; i <= loopEnd; i++) {
             int enemyPiecePosition = kingPosition + i * direction * 8;
+
+            if (!withingTheBoard(enemyPiecePosition)) {
+                break;
+            }
 
             if (BIT_BOARD[enemyPiecePosition]) {
                 if ((BIT_BOARD[enemyPiecePosition] & 3) != kingColor) {
@@ -98,11 +103,12 @@ CheckInformation getChecksInformation(int kingPosition) {
 
     // check if there is an enemy piece on the same first diagonal
     for (int direction: DIRECTIONS) {
-        int upLoopEnd = (kingFile > kingRank) ? kingFile : kingRank;
-        int downLoopEnd = 8 - ((kingFile < kingRank) ? kingFile : kingRank);
-        int loopEnd = (direction == DOWN) ? downLoopEnd : upLoopEnd;
         for (int i = 1; i <= loopEnd; i++) {
             int enemyPiecePosition = kingPosition + i * direction * 9;
+
+            if (!withingTheBoard(enemyPiecePosition) || !isOnTheSameFirstDiagonal(kingPosition, enemyPiecePosition)) {
+                break;
+            }
 
             if (BIT_BOARD[enemyPiecePosition]) {
                 if ((BIT_BOARD[enemyPiecePosition] & 3) != kingColor) {
@@ -120,11 +126,11 @@ CheckInformation getChecksInformation(int kingPosition) {
 
     // check if there is an enemy piece on the same second diagonal
     for (int direction: DIRECTIONS) {
-        int upLoopEnd = (kingFile < kingRank) ? kingFile : kingRank;
-        int downLoopEnd = 8 - ((kingFile > kingRank) ? kingFile : kingRank);
-        int loopEnd = (direction == DOWN) ? upLoopEnd : downLoopEnd;
         for (int i = 1; i <= loopEnd; i++) {
             int enemyPiecePosition = kingPosition + i * direction * 7;
+            if (!withingTheBoard(enemyPiecePosition) || !isOnTheSameSecondDiagonal(kingPosition, enemyPiecePosition)) {
+                break;
+            }
 
             if (BIT_BOARD[enemyPiecePosition]) {
                 if ((BIT_BOARD[enemyPiecePosition] & 3) != kingColor) {
@@ -171,6 +177,9 @@ bool isKingInCheck(int kingPosition) {
 bool isLegalMove(int fromSquare, int toSquare, int ownKingSquare) {
     bool isLegal = false;
     Piece fromSquarePiece = BIT_BOARD[fromSquare];
+    if (fromSquare == ownKingSquare) {
+        ownKingSquare = toSquare;
+    }
     Piece toSquarePiece = BIT_BOARD[toSquare];
     if (isPseudoLegalMove(fromSquare, toSquare)) {
         BIT_BOARD[fromSquare] = EMPTY;
