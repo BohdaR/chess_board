@@ -2,7 +2,6 @@
 #define STALEMATE_H
 
 #include "move_validation.h"
-#include "iostream"
 
 bool pawnHasLegalMoves(int pawnPosition, int ownKingPosition) {
     Piece pawn = BIT_BOARD[pawnPosition];
@@ -132,7 +131,6 @@ bool isStalemate(int kingPosition) {
         }
         // Check if the current piece has legal moves
         if (pieceHasLegalMoves(i)) {
-            std::cout << i << " - " << piece << "\n";
             return false; // If any piece has legal moves, it's not stalemate
         }
     }
