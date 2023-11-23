@@ -4,6 +4,7 @@
 #include "move_validation.h"
 #include "checkmate.h"
 #include "castling.h"
+#include "stalemate.h"
 
 //Mux control pins
 int s0 = 7;
@@ -174,6 +175,10 @@ void makeMove(int fromSquare, int toSquare, MOVE_TYPES moveTypes) {
         }
         moveTypes.check = isKingInCheck(blackKingSquare);
         moveTypes.checkmate = isCheckMate(blackKingSquare);
+        if (isStalemate(blackKingSquare)) {
+            showStalemateMessage();
+            return;
+        }
     } else {
         if (BIT_BOARD[toSquare] & PAWN && toSquare / 8 == 0) {
             BIT_BOARD[toSquare] = BLACK_QUEEN;
@@ -184,6 +189,10 @@ void makeMove(int fromSquare, int toSquare, MOVE_TYPES moveTypes) {
         }
         moveTypes.check = isKingInCheck(whiteKingSquare);
         moveTypes.checkmate = isCheckMate(whiteKingSquare);
+        if (isStalemate(whiteKingSquare)) {
+            showStalemateMessage();
+            return;
+        }
     }
 
     toggleWhoseMove();
