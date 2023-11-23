@@ -26,7 +26,7 @@ bool isOnTheSameFile(int firstSquare, int secondSquare) {
     return (firstSquare % 8) == (secondSquare % 8);
 }
 
-bool withingTheBoard(int square) {
+bool withinTheBoard(int square) {
     if (square < 0 || square > 63) {
         return false;
     }
@@ -44,7 +44,7 @@ bool isPseudoLegalKnightMove(int fromSquare, int toSquare) {
 
     // Check if the destination square is reachable from the source square
     if ((rankDiff == 2 && fileDiff == 1) || (rankDiff == 1 && fileDiff == 2)) {
-        return withingTheBoard(toSquare);
+        return withinTheBoard(toSquare);
     }
 
     // If no matching offset is found, the move is not pseudo-legal
@@ -91,7 +91,7 @@ bool isPseudoLegalKingMove(int fromSquare, int toSquare) {
 
     // Check if the destination square is reachable from the source square
     if (abs(fromRank - toRank) <= 1 && abs(fromFile - toFile) <= 1) {
-        return withingTheBoard(toSquare);
+        return withinTheBoard(toSquare);
     }
 
     // If no matching offset is found, the move is not pseudo-legal
@@ -166,11 +166,11 @@ bool isPseudoLegalQueenMove(int fromSquare, int toSquare) {
 }
 
 bool isPseudoLegalMove(int fromSquare, int toSquare) {
-    if (!withingTheBoard(fromSquare)) {
+    if (!withinTheBoard(fromSquare)) {
         return false;
     }
 
-    if (!withingTheBoard(toSquare)) {
+    if (!withinTheBoard(toSquare)) {
         return false;
     }
 
@@ -198,6 +198,227 @@ bool isPseudoLegalMove(int fromSquare, int toSquare) {
             return isPseudoLegalKingMove(fromSquare, toSquare);
     }
     return isValid;
+}
+
+bool canAttackTheKing(int pieceSquare, int kingSquare) {
+    if (!withinTheBoard(pieceSquare)) {
+        return false;
+    }
+
+    if (!withinTheBoard(kingSquare)) {
+        return false;
+    }
+
+    // check if on the target square a piece of the same color
+    if ((BIT_BOARD[pieceSquare] & 3) == (BIT_BOARD[kingSquare] & 3)) {
+        return false;
+    }
+
+    int piece = BIT_BOARD[pieceSquare] &
+                252; // here we take only 6 bit of piece 'cause first 2 bits are used for piece color
+    int rankDifference = (kingSquare / 8) - (pieceSquare / 8);
+    int fileDifference = (kingSquare % 8) - (pieceSquare % 8);
+
+    switch (piece) {
+        case BISHOP:
+            return isPseudoLegalBishopMove(pieceSquare, kingSquare);
+        case QUEEN:
+            return isPseudoLegalQueenMove(pieceSquare, kingSquare);
+        case ROOK:
+            return isPseudoLegalRookMove(pieceSquare, kingSquare);
+        case PAWN:
+            if ((BIT_BOARD[kingSquare] & WHITE) && rankDifference == -1 && abs(fileDifference) == 1) {
+                return true;
+            }
+            if ((BIT_BOARD[kingSquare] & BLACK) && rankDifference == 1 && abs(fileDifference) == 1) {
+                return true;
+            }
+            break;
+        case KNIGHT:
+            return isPseudoLegalKnightMove(pieceSquare, kingSquare);
+        case KING:
+            return isPseudoLegalKingMove(pieceSquare, kingSquare);
+    }
+    return false;
+}
+
+CheckInformation getChecksInformation(int kingPosition) {
+    CheckInformation checksInformation;
+    int kingColor = BIT_BOARD[kingPosition] & 3;
+
+    const int UP = 1;
+    const int DOWN = -1;
+    const int DIRECTIONS[] = {UP, DOWN};
+    const int loopEnd = 7;
+
+    // Check along the same rank (left and right)
+    for (int direction: DIRECTIONS) {
+        for (int i = 1; i <= loopEnd; i++) {
+            int enemyPiecePosition = kingPosition + i * direction;
+
+            if (!withinTheBoard(enemyPiecePosition)) {
+                break;
+            }
+
+            if (BIT_BOARD[enemyPiecePosition]) {
+                if ((BIT_BOARD[enemyPiecePosition] & 3) != kingColor) {
+                    if (canAttackTheKing(enemyPiecePosition, kingPosition)) {
+                        checksInformation.check = true;
+                        checksInformation.rankCheck = true;
+                        checksInformation.checksNumber += 1;
+                        checksInformation.checkingPieceSquare = enemyPiecePosition;
+                    }
+                }
+                break;  // Break even if it's the same color
+            }
+        }
+    }
+
+    // check if there is an enemy piece on the same file
+    for (int direction: DIRECTIONS) {
+        for (int i = 1; i <= loopEnd; i++) {
+            int enemyPiecePosition = kingPosition + i * direction * 8;
+
+            if (!withinTheBoard(enemyPiecePosition)) {
+                break;
+            }
+
+            if (BIT_BOARD[enemyPiecePosition]) {
+                if ((BIT_BOARD[enemyPiecePosition] & 3) != kingColor) {
+                    if (canAttackTheKing(enemyPiecePosition, kingPosition)) {
+                        checksInformation.check = true;
+                        checksInformation.fileCheck = true;
+                        checksInformation.checksNumber += 1;
+                        checksInformation.checkingPieceSquare = enemyPiecePosition;
+                    }
+                }
+                break;  // Break even if it's the same color
+            }
+        }
+    }
+
+    // check if there is an enemy piece on the same first diagonal
+    for (int direction: DIRECTIONS) {
+        for (int i = 1; i <= loopEnd; i++) {
+            int enemyPiecePosition = kingPosition + i * direction * 9;
+
+            if (!withinTheBoard(enemyPiecePosition) || !isOnTheSameFirstDiagonal(kingPosition, enemyPiecePosition)) {
+                break;
+            }
+
+            if (BIT_BOARD[enemyPiecePosition]) {
+                if ((BIT_BOARD[enemyPiecePosition] & 3) != kingColor) {
+                    if (canAttackTheKing(enemyPiecePosition, kingPosition)) {
+                        checksInformation.check = true;
+                        checksInformation.firstDiagonalCheck = true;
+                        checksInformation.checksNumber += 1;
+                        checksInformation.checkingPieceSquare = enemyPiecePosition;
+                    }
+                }
+                break;  // Break even if it's the same color
+            }
+        }
+    }
+
+    // check if there is an enemy piece on the same second diagonal
+    for (int direction: DIRECTIONS) {
+        for (int i = 1; i <= loopEnd; i++) {
+            int enemyPiecePosition = kingPosition + i * direction * 7;
+            if (!withinTheBoard(enemyPiecePosition) || !isOnTheSameSecondDiagonal(kingPosition, enemyPiecePosition)) {
+                break;
+            }
+
+            if (BIT_BOARD[enemyPiecePosition]) {
+                if ((BIT_BOARD[enemyPiecePosition] & 3) != kingColor) {
+                    if (canAttackTheKing(enemyPiecePosition, kingPosition)) {
+                        checksInformation.check = true;
+                        checksInformation.secondDiagonalCheck = true;
+                        checksInformation.checksNumber += 1;
+                        checksInformation.checkingPieceSquare = enemyPiecePosition;
+                    }
+                }
+                break;  // Break even if it's the same color
+            }
+        }
+    }
+
+    // check if there is an enemy knight to give a check
+    const int knightMoveOffsets[] = {17, -17, 15, -15, 10, -10, 6, -6};
+
+    // Check if the destination square is reachable from the source square
+    for (int offset: knightMoveOffsets) {
+        int enemyPiecePosition = kingPosition + offset;
+        if (!withinTheBoard(enemyPiecePosition)) {
+            continue;
+        }
+        if (BIT_BOARD[enemyPiecePosition]) {
+            if ((BIT_BOARD[enemyPiecePosition] & 3) != kingColor) {
+                if (canAttackTheKing(enemyPiecePosition, kingPosition)) {
+                    checksInformation.check = true;
+                    checksInformation.knightCheck = true;
+                    checksInformation.checksNumber += 1;
+                    checksInformation.checkingPieceSquare = enemyPiecePosition;
+                }
+            }
+        }
+    }
+
+    return checksInformation;
+}
+
+bool isKingInCheck(int kingPosition) {
+    return getChecksInformation(kingPosition).check;
+}
+
+bool isLegalMove(int fromSquare, int toSquare, int ownKingSquare) {
+    // Check if the squares are within the board
+    if (!withinTheBoard(fromSquare) || !withinTheBoard(toSquare)) {
+        return false;
+    }
+
+    // Check if the squares are the same
+    if (fromSquare == toSquare) {
+        return false;
+    }
+
+    // Preserve the current state of the board
+    Piece fromSquarePiece = BIT_BOARD[fromSquare];
+    Piece toSquarePiece = BIT_BOARD[toSquare];
+
+    // Update the ownKingSquare if the moving piece is the own king
+    if (fromSquare == ownKingSquare) {
+        ownKingSquare = toSquare;
+    }
+
+    // Check if the move is pseudo-legal
+    bool isPseudoLegal = isPseudoLegalMove(fromSquare, toSquare);
+
+    // Simulate the move
+    BIT_BOARD[fromSquare] = EMPTY;
+    BIT_BOARD[toSquare] = fromSquarePiece;
+
+    // Check if the move results in the own king being in check
+    bool isLegal = isPseudoLegal && !isKingInCheck(ownKingSquare);
+
+    // Restore the original state of the board
+    BIT_BOARD[fromSquare] = fromSquarePiece;
+    BIT_BOARD[toSquare] = toSquarePiece;
+
+    return isLegal;
+}
+
+bool kingHasLegalMoves(int kingPosition) {
+    const int kingMoveOffsets[8] = {1, -1, 8, -8, 7, -7, 9, -9};
+    for (int offset: kingMoveOffsets) {
+        int testPosition = kingPosition + offset;
+        if (testPosition < 0 || testPosition > 64) {
+            continue;
+        }
+        if (isLegalMove(kingPosition, testPosition, kingPosition)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 #endif
