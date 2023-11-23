@@ -1,5 +1,8 @@
+#include <LiquidCrystal_I2C.h>
 #ifndef constants_h
 #define constants_h
+
+LiquidCrystal_I2C lcd(0x27, 16, 2);  // set the LCD address to 0x3F for 16 chars and 2 line display
 
 enum Piece {
     EMPTY = 0,
@@ -36,8 +39,8 @@ enum MoveType {
     CHECK = 4,
     CHECKMATE = 8,
     PROMOTION = 16,
-    LONG_CASTLING = 32,
-    SHORT_CASTLING = 64
+    SHORT_CASTLING = 32,
+    LONG_CASTLING = 64
 };
 
 struct MOVE_TYPES {
