@@ -26,10 +26,10 @@ void toggleWhoseMove() {
     }
 }
 
-void showStalemateMessage() {
+void showDrawMessage(char message[]="Draw!") {
     lcd.clear();
     lcd.setCursor(0, 0);
-    lcd.print("Draw!");
+    lcd.print(message);
     lcd.setCursor(0, 1);
     lcd.print("1/2 - 1/2");
 }
