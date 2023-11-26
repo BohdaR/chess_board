@@ -1,7 +1,7 @@
 #include "iostream"
+#include "../constants.h"
+#include "../stalemate.h"
 #include "../checkmate.h"
-#include "../castling.h"
-#include "../helpers.h"
 
 void clearSquare(int squareIndex) {
     BIT_BOARD[squareIndex] = EMPTY;
@@ -14,12 +14,12 @@ void updatePosition(int fromSquare, int toSquare) {
 }
 
 int main() {
-    int kingSquare = 21;
-    int attackerSquare = 56;
-    updatePosition(49, 51);
-    updatePosition(58, attackerSquare);
-    updatePosition(4, kingSquare);
+    updatePosition(13, 29);
+    updatePosition(14, 30);
+    updatePosition(59, 31);
 
 //    isKingInCheck(12);
-    std::cout << isKingInCheck(kingSquare) << "\n";
+    for (int i = 0; i < 1000000; i++) {
+        isStalemate(whiteKingSquare);
+    }
 }

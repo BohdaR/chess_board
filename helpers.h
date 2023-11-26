@@ -26,6 +26,14 @@ void toggleWhoseMove() {
     }
 }
 
+void showStalemateMessage() {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Draw!");
+    lcd.setCursor(0, 1);
+    lcd.print("1/2 - 1/2");
+}
+
 void showWhoseMove() {
     lcd.clear();
     lcd.setCursor(0, 0);
