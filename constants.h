@@ -1,8 +1,12 @@
-#include <LiquidCrystal_I2C.h>
 #ifndef constants_h
 #define constants_h
+#define MAX_POSITIONS 50
 
+#include <LiquidCrystal_I2C.h>
 LiquidCrystal_I2C lcd(0x27, 16, 2);  // set the LCD address to 0x3F for 16 chars and 2 line display
+unsigned long positionsHistory[MAX_POSITIONS];
+
+int currentPositionIndex = -1;
 
 enum Piece {
     EMPTY = 0,

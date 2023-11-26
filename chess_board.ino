@@ -5,6 +5,7 @@
 #include "checkmate.h"
 #include "castling.h"
 #include "stalemate.h"
+#include "threefold_repetition.h"
 
 //Mux control pins
 int s0 = 7;
@@ -68,7 +69,7 @@ void clearSquare(int squareIndex) {
 }
 
 void updatePosition(int fromSquare, int toSquare) {
-    int movedPiece = BIT_BOARD[fromSquare];
+    Piece movedPiece = BIT_BOARD[fromSquare];
     clearSquare(fromSquare);
     BIT_BOARD[toSquare] = movedPiece;
 }
@@ -133,7 +134,16 @@ int getSquareColor(int square) {
 }
 
 void makeMove(int fromSquare, int toSquare, MOVE_TYPES moveTypes) {
+    if (moveTypes.capture || (BIT_BOARD[fromSquare] & PAWN)) {
+        resetPositionTracking();
+    }
     updatePosition(fromSquare, toSquare);
+    savePosition();
+
+    if (isTreeFoldRepetition()) {
+        showDrawMessage("Threefold!");
+        return;
+    }
     if (PositionDynamics.castlingRights & FULL_CASTLING_RIGHTS) {
         switch (fromSquare) {
             case 0:
@@ -176,7 +186,7 @@ void makeMove(int fromSquare, int toSquare, MOVE_TYPES moveTypes) {
         moveTypes.check = isKingInCheck(blackKingSquare);
         moveTypes.checkmate = isCheckMate(blackKingSquare);
         if (isStalemate(blackKingSquare)) {
-            showStalemateMessage();
+            showDrawMessage("Stalemate!");
             return;
         }
     } else {
@@ -190,7 +200,7 @@ void makeMove(int fromSquare, int toSquare, MOVE_TYPES moveTypes) {
         moveTypes.check = isKingInCheck(whiteKingSquare);
         moveTypes.checkmate = isCheckMate(whiteKingSquare);
         if (isStalemate(whiteKingSquare)) {
-            showStalemateMessage();
+            showDrawMessage("Stalemate!");
             return;
         }
     }
@@ -234,6 +244,7 @@ void performCastling(MoveType castlingType, int rookToSquare, int rookFromSquare
     PositionDynamics.moveTypes.checkmate = isCheckMate(getOppositeColorKingSquare());
 
     toggleWhoseMove();
+    savePosition();
     showWhoseMove();
     lcd.setCursor(0, 1);
     lcd.print(getCastlingNotation(castlingType, PositionDynamics.moveTypes));
@@ -262,6 +273,7 @@ void setup() {
 
     // Print a message on both lines of the LCD.
     verifyStartPosition();
+    savePosition(); // save initial position
     lcd.setCursor(0, 0);   //Set cursor to character 2 on line 0
     delay(1000);
     lcd.print("White to move!");
