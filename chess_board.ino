@@ -140,6 +140,11 @@ void makeMove(int fromSquare, int toSquare, MOVE_TYPES moveTypes) {
     updatePosition(fromSquare, toSquare);
     savePosition();
 
+    if (currentPositionIndex == MAX_POSITIONS) {
+        showDrawMessage("50 moves rule!");
+        return;
+    }
+
     if (isTreeFoldRepetition()) {
         showDrawMessage("Threefold!");
         return;
@@ -185,10 +190,6 @@ void makeMove(int fromSquare, int toSquare, MOVE_TYPES moveTypes) {
         }
         moveTypes.check = isKingInCheck(blackKingSquare);
         moveTypes.checkmate = isCheckMate(blackKingSquare);
-        if (isStalemate(blackKingSquare)) {
-            showDrawMessage("Stalemate!");
-            return;
-        }
     } else {
         if (BIT_BOARD[toSquare] & PAWN && toSquare / 8 == 0) {
             BIT_BOARD[toSquare] = BLACK_QUEEN;
@@ -199,10 +200,11 @@ void makeMove(int fromSquare, int toSquare, MOVE_TYPES moveTypes) {
         }
         moveTypes.check = isKingInCheck(whiteKingSquare);
         moveTypes.checkmate = isCheckMate(whiteKingSquare);
-        if (isStalemate(whiteKingSquare)) {
-            showDrawMessage("Stalemate!");
-            return;
-        }
+    }
+
+    if (isStalemate(getOppositeColorKingSquare())) {
+        showDrawMessage("Stalemate!");
+        return;
     }
 
     toggleWhoseMove();
@@ -212,6 +214,9 @@ void makeMove(int fromSquare, int toSquare, MOVE_TYPES moveTypes) {
     lcd.print(moveNotation);
 
     resetPositionDynamics();
+    if (!(isSufficientMaterial(WHITE) || isSufficientMaterial(BLACK))) {
+        showDrawMessage("Draw!");
+    }
 }
 
 void verifyStartPosition() {
@@ -242,6 +247,10 @@ void performCastling(MoveType castlingType, int rookToSquare, int rookFromSquare
     updatePosition(rookFromSquare, rookToSquare);
     PositionDynamics.moveTypes.check = isKingInCheck(getOppositeColorKingSquare());
     PositionDynamics.moveTypes.checkmate = isCheckMate(getOppositeColorKingSquare());
+    if (isStalemate(getOppositeColorKingSquare())) {
+        showDrawMessage("Stalemate!");
+        return;
+    }
 
     toggleWhoseMove();
     savePosition();

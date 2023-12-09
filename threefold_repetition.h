@@ -25,12 +25,6 @@ unsigned long calculatePositionHash() {
 
 void savePosition() {
     currentPositionIndex++;
-
-    // Wrap around if the array is full
-    if (currentPositionIndex == MAX_POSITIONS) {
-        showDrawMessage("50 moves rule!");
-        resetPositionTracking();
-    }
     // Save the current position to the array
     positionsHistory[currentPositionIndex] = calculatePositionHash();
 }

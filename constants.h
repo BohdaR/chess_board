@@ -1,6 +1,6 @@
 #ifndef constants_h
 #define constants_h
-#define MAX_POSITIONS 50
+#define MAX_POSITIONS 100
 
 #include <LiquidCrystal_I2C.h>
 LiquidCrystal_I2C lcd(0x27, 16, 2);  // set the LCD address to 0x3F for 16 chars and 2 line display
@@ -52,6 +52,7 @@ struct MOVE_TYPES {
     bool check = false;
     bool checkmate = false;
     bool promotion = false;
+    bool draw = false;
 };
 
 enum KING_CONSTANT {

@@ -50,7 +50,27 @@ void resetPositionDynamics() {
     PositionDynamics.moveTypes.capture = false;
     PositionDynamics.moveTypes.check = false;
     PositionDynamics.moveTypes.promotion = false;
-    PositionDynamics.moveTypes.checkmate = false;
+}
+
+bool isSufficientMaterial(Color color) {
+    int materialAmount = 0;
+    for(int i = 0; i < 64; i++) {
+        if (BIT_BOARD[i] & color) {
+            int piece = BIT_BOARD[i] & 252;
+            if (piece & KING) {
+                continue;
+            }
+
+            if (piece & (PAWN | ROOK | QUEEN)) {
+                return true;
+            }
+            else {
+                materialAmount += piece;
+            }
+        }
+    }
+    // 16 is equal one bishop or 2 knights and the material amount is bigger we have sufficient amount of material
+    return materialAmount > 16;
 }
 
 #endif
