@@ -3,6 +3,19 @@
 
 #include "constants.h"
 
+char getFileLetter(int squareIndex) {
+    char fileLetter = 'a' + squareIndex % 8;
+    return fileLetter;
+}
+
+int getRankNumber(int squareIndex) {
+    return squareIndex / 8 + 1;
+}
+
+int getPieceColor(int piece) {
+    return piece & 3; // we take first 2 bits which are use for piece color
+}
+
 int getOppositeColorKingSquare() {
     if (PositionDynamics.whoseMove == WHITE) {
         return blackKingSquare;

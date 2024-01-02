@@ -8,6 +8,10 @@ unsigned long positionsHistory[MAX_POSITIONS];
 
 int currentPositionIndex = -1;
 
+unsigned long whitePlayerTime = 180000;
+unsigned long blackPlayerTime = 180000;
+int timeIncrement = 2000;
+
 enum Piece {
     EMPTY = 0,
     PAWN = 4,

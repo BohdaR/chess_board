@@ -6,14 +6,15 @@
 #include "castling.h"
 #include "stalemate.h"
 #include "threefold_repetition.h"
+#include "disambiguation.h"
 
 //Mux control pins
-int s0 = 7;
-int s1 = 8;
-int s2 = 9;
-int s3 = 10;
-int s4 = 11;
-int s5 = 12;
+int s0 = 2;
+int s1 = 3;
+int s2 = 4;
+int s3 = 5;
+int s4 = 6;
+int s5 = 7;
 
 //Mux in "SIG" pin
 int SIG_pin = 1;
@@ -33,17 +34,37 @@ float readMux(int channel) {
     return val * 5.0 / 1023;
 }
 
-char getFileLetter(int squareIndex) {
-    char fileLetter = 'a' + squareIndex % 8;
-    return fileLetter;
+const char* formatTime(unsigned long time) {
+    int minutes = time / 60000;
+    int seconds = time / 1000 % 60;
+    int miliseconds = time % 1000 / 100;
+    char* formattedTime = malloc(6);
+    if (time > 60000) {
+        sprintf(formattedTime, "%02d:%02d", minutes, seconds);
+    } else {
+        sprintf(formattedTime, "%02d.%d", seconds, miliseconds);
+    }
+    return formattedTime;
 }
 
-int getRankNumber(int squareIndex) {
-    return squareIndex / 8 + 1;
+void decrementTime() {
+    if (PositionDynamics.whoseMove == BLACK) blackPlayerTime = blackPlayerTime - 100;
+    if (PositionDynamics.whoseMove == WHITE) whitePlayerTime = whitePlayerTime - 100;
 }
 
-int getPieceColor(int piece) {
-    return piece & 3; // we take first 2 bits which are use for piece color
+void updateClock() {
+    const char* whiteFormattedTime = formatTime(whitePlayerTime);
+    const char* blackFormattedTime = formatTime(blackPlayerTime);
+
+    lcd.setCursor(0, 1);
+    lcd.print(whiteFormattedTime);
+    lcd.setCursor(11, 1);
+    lcd.print(blackFormattedTime);
+
+    delete[] whiteFormattedTime;
+    delete[] blackFormattedTime;
+
+    decrementTime();
 }
 
 String getPieceLatter(int piece) {
@@ -83,7 +104,7 @@ String getSquare(int squareIndex) {
     return String(getFileLetter(squareIndex)) + String(getRankNumber(squareIndex));
 }
 
-String getMoveNotation(int fromSquare, int toSquare, MOVE_TYPES moveTypes) {
+String getMoveNotation(int fromSquare, int toSquare, MOVE_TYPES moveTypes, int disambiguation) {
     int piece = BIT_BOARD[toSquare];
     String square = getPieceLatter(piece) + getSquare(toSquare);
 
@@ -95,6 +116,10 @@ String getMoveNotation(int fromSquare, int toSquare, MOVE_TYPES moveTypes) {
             square = String(square[0]) + "x" + square.substring(1, -1);
         }
     }
+
+    String disambiguationNotation = getDisambiguationNotation(disambiguation, fromSquare);
+
+    square = String(square[0]) + disambiguationNotation + square.substring(1, -1);
 
     if (moveTypes.checkmate) {
         square += "#";
@@ -124,7 +149,6 @@ String getCastlingNotation(MoveType castlingType, MOVE_TYPES moveTypes) {
     if (moveTypes.check) {
         notation += "+";
     }
-
     return notation;
 }
 
@@ -134,6 +158,8 @@ int getSquareColor(int square) {
 }
 
 void makeMove(int fromSquare, int toSquare, MOVE_TYPES moveTypes) {
+    int disambiguation = getDisambiguation(fromSquare, toSquare);
+
     if (moveTypes.capture || (BIT_BOARD[fromSquare] & PAWN)) {
         resetPositionTracking();
     }
@@ -141,11 +167,13 @@ void makeMove(int fromSquare, int toSquare, MOVE_TYPES moveTypes) {
     savePosition();
 
     if (currentPositionIndex == MAX_POSITIONS) {
+        PositionDynamics.moveTypes.draw = true;
         showDrawMessage("50 moves rule!");
         return;
     }
 
     if (isTreeFoldRepetition()) {
+        PositionDynamics.moveTypes.draw = true;
         showDrawMessage("Threefold!");
         return;
     }
@@ -190,6 +218,8 @@ void makeMove(int fromSquare, int toSquare, MOVE_TYPES moveTypes) {
         }
         moveTypes.check = isKingInCheck(blackKingSquare);
         moveTypes.checkmate = isCheckMate(blackKingSquare);
+        PositionDynamics.moveTypes.checkmate = moveTypes.checkmate;
+        whitePlayerTime = whitePlayerTime + timeIncrement;
     } else {
         if (BIT_BOARD[toSquare] & PAWN && toSquare / 8 == 0) {
             BIT_BOARD[toSquare] = BLACK_QUEEN;
@@ -200,18 +230,36 @@ void makeMove(int fromSquare, int toSquare, MOVE_TYPES moveTypes) {
         }
         moveTypes.check = isKingInCheck(whiteKingSquare);
         moveTypes.checkmate = isCheckMate(whiteKingSquare);
+        PositionDynamics.moveTypes.checkmate = moveTypes.checkmate;
+        blackPlayerTime = blackPlayerTime + timeIncrement;
     }
 
     if (isStalemate(getOppositeColorKingSquare())) {
+        PositionDynamics.moveTypes.draw = true;
         showDrawMessage("Stalemate!");
         return;
     }
 
+    if (moveTypes.checkmate) {
+        if (PositionDynamics.whoseMove == WHITE) {
+            lcd.clear();
+            lcd.setCursor(0, 0);
+            lcd.print("White won! 1-0");
+        } else {
+            lcd.clear();
+            lcd.setCursor(0, 0);
+            lcd.print("Black won! 0-1");
+        }
+    }
+
     toggleWhoseMove();
-    showWhoseMove();
-    String moveNotation = getMoveNotation(fromSquare, toSquare, moveTypes);
-    lcd.setCursor(0, 1);
-    lcd.print(moveNotation);
+    if (!moveTypes.checkmate) {
+        showWhoseMove();
+    }
+    String moveNotation = getMoveNotation(fromSquare, toSquare, moveTypes, disambiguation);
+//    lcd.setCursor(0, 1);
+//    lcd.print(moveNotation);
+    Serial.println(moveNotation);
 
     resetPositionDynamics();
     if (!(isSufficientMaterial(WHITE) || isSufficientMaterial(BLACK))) {
@@ -219,12 +267,11 @@ void makeMove(int fromSquare, int toSquare, MOVE_TYPES moveTypes) {
     }
 }
 
-void verifyStartPosition() {
+void verifyPosition() {
     for (int i = 0; i < 64; i++) {
         float channelValue = readMux(i);
         if (channelValue < 3.0 && BIT_BOARD[i] != EMPTY) {
-            lcd.clear();
-            lcd.setCursor(0, 0);
+            lcd.setCursor(0, 1);
             lcd.print(getSquare(i));
             lcd.print(" is missing!");
             i--;
@@ -237,10 +284,12 @@ void verifyStartPosition() {
 void performCastling(MoveType castlingType, int rookToSquare, int rookFromSquare) {
     // Wait for the rook to appear on the target square
     while (readMux(rookToSquare) < 3.0) {
+        updateClock();
+        delay(90);
         // Wait for the rook to leave the square
-        delay(50);
         while (readMux(rookFromSquare) > 3.0) {
-            delay(50);
+            updateClock();
+            delay(90);
         }
     }
 
@@ -248,6 +297,7 @@ void performCastling(MoveType castlingType, int rookToSquare, int rookFromSquare
     PositionDynamics.moveTypes.check = isKingInCheck(getOppositeColorKingSquare());
     PositionDynamics.moveTypes.checkmate = isCheckMate(getOppositeColorKingSquare());
     if (isStalemate(getOppositeColorKingSquare())) {
+        PositionDynamics.moveTypes.draw = true;
         showDrawMessage("Stalemate!");
         return;
     }
@@ -255,13 +305,28 @@ void performCastling(MoveType castlingType, int rookToSquare, int rookFromSquare
     toggleWhoseMove();
     savePosition();
     showWhoseMove();
-    lcd.setCursor(0, 1);
-    lcd.print(getCastlingNotation(castlingType, PositionDynamics.moveTypes));
+//    lcd.setCursor(0, 1);
+//    lcd.print(getCastlingNotation(castlingType, PositionDynamics.moveTypes));
+    Serial.println(getCastlingNotation(castlingType, PositionDynamics.moveTypes));
 
     resetPositionDynamics();
 }
 
+void handleIllegalMove() {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Illegal move!");
+
+    resetPositionDynamics();
+    verifyPosition();
+
+    delay(500);
+    lcd.clear();
+    showWhoseMove();
+}
+
 void setup() {
+    Serial.begin(9600);
     pinMode(s0, OUTPUT);
     pinMode(s1, OUTPUT);
     pinMode(s2, OUTPUT);
@@ -281,108 +346,114 @@ void setup() {
     lcd.backlight();      // Make sure backlight is on
 
     // Print a message on both lines of the LCD.
-    verifyStartPosition();
+    verifyPosition();
     savePosition(); // save initial position
     lcd.setCursor(0, 0);   //Set cursor to character 2 on line 0
     delay(1000);
+
+    lcd.clear();
     lcd.print("White to move!");
 }
 
 void loop() {
-    for (int i = 0; i < 64; i++) {
-        float channelValue = readMux(i);
-        if (channelValue < 3.0 && BIT_BOARD[i] && PositionDynamics.pickedSquare != i &&
-            PositionDynamics.attackedPieceSquare != i) {
-            // enemy piece is picked
-            if (!(BIT_BOARD[i] & PositionDynamics.whoseMove)) {
-                PositionDynamics.moveTypes.capture = true;
-                PositionDynamics.attackedPieceSquare = i;
+    if (!PositionDynamics.moveTypes.checkmate && !PositionDynamics.moveTypes.draw && whitePlayerTime > 0 &&
+        blackPlayerTime > 0) {
+
+        updateClock();
+        delay(70);
+
+        for (int i = 0; i < 64; i++) {
+            float channelValue = readMux(i);
+            if (channelValue < 3.0 && BIT_BOARD[i] && PositionDynamics.pickedSquare != i &&
+                PositionDynamics.attackedPieceSquare != i) {
+                // enemy piece is picked
+                if (!(BIT_BOARD[i] & PositionDynamics.whoseMove)) {
+                    PositionDynamics.moveTypes.capture = true;
+                    PositionDynamics.attackedPieceSquare = i;
+                    String squareWithPiece = getPieceLatter(BIT_BOARD[i]) + getSquare(i);
+
+                    lcd.clear();
+                    lcd.setCursor(0, 0);
+                    lcd.print("Capturing ");
+                    lcd.print(squareWithPiece);
+                    break;
+                }
+                // piece is picked
+                PositionDynamics.pickedSquare = i;
                 String squareWithPiece = getPieceLatter(BIT_BOARD[i]) + getSquare(i);
 
                 lcd.clear();
                 lcd.setCursor(0, 0);
-                lcd.print("Capturing ");
+                lcd.print(squareWithPiece);
+                lcd.print(" is picked!");
+            }
+            if (PositionDynamics.attackedPieceSquare == i && channelValue > 3.0 &&
+                PositionDynamics.pickedSquare == -1) {
+                PositionDynamics.moveTypes.capture = false;
+                PositionDynamics.attackedPieceSquare = -1;
+                String squareWithPiece = getPieceLatter(BIT_BOARD[i]) + getSquare(i);
+
+                lcd.clear();
+                lcd.setCursor(0, 0);
+                lcd.print("Moved back ");
                 lcd.print(squareWithPiece);
                 break;
             }
-            // piece is picked
-            PositionDynamics.pickedSquare = i;
-            String squareWithPiece = getPieceLatter(BIT_BOARD[i]) + getSquare(i);
-
-            lcd.clear();
-            lcd.setCursor(0, 0);
-            lcd.print(squareWithPiece);
-            lcd.print(" is picked!");
-        }
-        if (PositionDynamics.attackedPieceSquare == i && channelValue > 3.0 && PositionDynamics.pickedSquare == -1) {
-            PositionDynamics.moveTypes.capture = false;
-            PositionDynamics.attackedPieceSquare = -1;
-            String squareWithPiece = getPieceLatter(BIT_BOARD[i]) + getSquare(i);
-
-            lcd.clear();
-            lcd.setCursor(0, 0);
-            lcd.print("Moved back ");
-            lcd.print(squareWithPiece);
-            break;
-        }
-        if (channelValue > 3.0 && (BIT_BOARD[i] == EMPTY || PositionDynamics.attackedPieceSquare == i)) {
-            int moveOffset = i - PositionDynamics.pickedSquare;
-            // white's move
-            if (PositionDynamics.whoseMove == WHITE) {
-                // if picked piece is on the king start square
-                if (PositionDynamics.pickedSquare == WHITE_KING_START_SQUARE) {
-                    if (moveOffset == 2 && canCastleTheKing(SHORT_CASTLING)) {
-                        updatePosition(PositionDynamics.pickedSquare, i);
-                        whiteKingSquare = i;
-                        performCastling(SHORT_CASTLING, 5, 7);
-                        PositionDynamics.castlingRights -= WHITE_CASTLING_RIGHTS;
-                        break;
+            if (channelValue > 3.0 && (BIT_BOARD[i] == EMPTY || PositionDynamics.attackedPieceSquare == i)) {
+                int moveOffset = i - PositionDynamics.pickedSquare;
+                // white's move
+                if (PositionDynamics.whoseMove == WHITE) {
+                    // if picked piece is on the king start square
+                    if (PositionDynamics.pickedSquare == WHITE_KING_START_SQUARE) {
+                        if (moveOffset == 2 && canCastleTheKing(SHORT_CASTLING)) {
+                            updatePosition(PositionDynamics.pickedSquare, i);
+                            whiteKingSquare = i;
+                            performCastling(SHORT_CASTLING, 5, 7);
+                            PositionDynamics.castlingRights -= WHITE_CASTLING_RIGHTS;
+                            break;
+                        } else if (moveOffset == -2 && canCastleTheKing(LONG_CASTLING)) {
+                            updatePosition(PositionDynamics.pickedSquare, i);
+                            whiteKingSquare = i;
+                            performCastling(LONG_CASTLING, 3, 0);
+                            PositionDynamics.castlingRights -= WHITE_CASTLING_RIGHTS;
+                            break;
+                        }
                     }
-                    else if (moveOffset == -2 && canCastleTheKing(LONG_CASTLING)) {
-                        updatePosition(PositionDynamics.pickedSquare, i);
-                        whiteKingSquare = i;
-                        performCastling(LONG_CASTLING, 3, 0);
-                        PositionDynamics.castlingRights -= WHITE_CASTLING_RIGHTS;
-                        break;
-                    }
+
                 }
-
-            }
-            // black's move
-            else {
-                // if picked piece is on the king start square
-                if (PositionDynamics.pickedSquare == BLACK_KING_START_SQUARE) {
-                    if (moveOffset == 2 && canCastleTheKing(SHORT_CASTLING)) {
-                        updatePosition(PositionDynamics.pickedSquare, i);
-                        blackKingSquare = i;
-                        performCastling(SHORT_CASTLING, 61, 63);
-                        PositionDynamics.castlingRights -= BLACK_CASTLING_RIGHTS;
-                        break;
-                    }
-                    else if (moveOffset == -2 && canCastleTheKing(LONG_CASTLING)) {
-                        updatePosition(PositionDynamics.pickedSquare, i);
-                        blackKingSquare = i;
-                        performCastling(LONG_CASTLING, 59, 56);
-                        PositionDynamics.castlingRights -= BLACK_CASTLING_RIGHTS;
-                        break;
+                    // black's move
+                else {
+                    // if picked piece is on the king start square
+                    if (PositionDynamics.pickedSquare == BLACK_KING_START_SQUARE) {
+                        if (moveOffset == 2 && canCastleTheKing(SHORT_CASTLING)) {
+                            updatePosition(PositionDynamics.pickedSquare, i);
+                            blackKingSquare = i;
+                            performCastling(SHORT_CASTLING, 61, 63);
+                            PositionDynamics.castlingRights -= BLACK_CASTLING_RIGHTS;
+                            break;
+                        } else if (moveOffset == -2 && canCastleTheKing(LONG_CASTLING)) {
+                            updatePosition(PositionDynamics.pickedSquare, i);
+                            blackKingSquare = i;
+                            performCastling(LONG_CASTLING, 59, 56);
+                            PositionDynamics.castlingRights -= BLACK_CASTLING_RIGHTS;
+                            break;
+                        }
                     }
                 }
-            }
 
 
-            if (isLegalMove(PositionDynamics.pickedSquare, i, getOwnKingSquare())) {
-                if (PositionDynamics.whoseMove == WHITE && (PositionDynamics.attackedPieceSquare + 8) == i) {
-                    clearSquare(PositionDynamics.attackedPieceSquare);
+                if (isLegalMove(PositionDynamics.pickedSquare, i, getOwnKingSquare())) {
+                    if (PositionDynamics.whoseMove == WHITE && (PositionDynamics.attackedPieceSquare + 8) == i) {
+                        clearSquare(PositionDynamics.attackedPieceSquare);
+                    }
+                    if (PositionDynamics.whoseMove == BLACK && (PositionDynamics.attackedPieceSquare - 8) == i) {
+                        clearSquare(PositionDynamics.attackedPieceSquare);
+                    }
+                    PositionDynamics.enPassantSquare = -1;
+                    makeMove(PositionDynamics.pickedSquare, i, PositionDynamics.moveTypes);
+                } else {
+                    handleIllegalMove();
                 }
-                if (PositionDynamics.whoseMove == BLACK && (PositionDynamics.attackedPieceSquare - 8) == i) {
-                    clearSquare(PositionDynamics.attackedPieceSquare);
-                }
-                PositionDynamics.enPassantSquare = -1;
-                makeMove(PositionDynamics.pickedSquare, i, PositionDynamics.moveTypes);
-            } else {
-                lcd.clear();
-                lcd.setCursor(0, 0);
-                lcd.print("Illegal move!");
             }
         }
     }
