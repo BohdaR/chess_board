@@ -112,6 +112,7 @@ bool pieceHasLegalMoves(int piecePosition) {
         case EMPTY:
             return false;
     }
+    return false;
 }
 
 bool isStalemate(int kingPosition) {

@@ -83,6 +83,7 @@ String getPieceLatter(int piece) {
         case KING:
             return "K";
     }
+    return "";
 }
 
 void clearSquare(int squareIndex) {

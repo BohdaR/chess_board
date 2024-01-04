@@ -39,7 +39,7 @@ void toggleWhoseMove() {
     }
 }
 
-void showDrawMessage(char message[]="Draw!") {
+void showDrawMessage(const String message="Draw!") {
     lcd.clear();
     lcd.setCursor(0, 0);
     lcd.print(message);
