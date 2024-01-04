@@ -1,23 +1,26 @@
-#include <LiquidCrystal_I2C.h>
-#include "constants.h"
-#include "helpers.h"
-#include "move_validation.h"
-#include "checkmate.h"
-#include "castling.h"
-#include "stalemate.h"
-#include "threefold_repetition.h"
-#include "disambiguation.h"
+#include "Arduino.h"
+#include "../include/constants.h"
+#include "../include/helpers.h"
+#include "../include/move_validation.h"
+#include "../include/checkmate.h"
+#include "../include/castling.h"
+#include "../include/stalemate.h"
+#include "../include/threefold_repetition.h"
+#include "../include/disambiguation.h"
 
 //Mux control pins
-int s0 = 2;
-int s1 = 3;
-int s2 = 4;
-int s3 = 5;
-int s4 = 6;
-int s5 = 7;
+int s0 = 32;
+int s1 = 33;
+int s2 = 25;
+int s3 = 26;
+int s4 = 27;
+int s5 = 14;
 
 //Mux in "SIG" pin
-int SIG_pin = 1;
+int SIG_pin = 35;
+
+// Peak value to treat sensor as detected
+float peakValue = 1.8;
 
 float readMux(int channel) {
     digitalWrite(s0, channel & 1);
@@ -31,20 +34,20 @@ float readMux(int channel) {
     int val = analogRead(SIG_pin);
 
     //return the value
-    return val * 5.0 / 1023;
+    return val * 3.3 / 4095;
 }
 
-const char* formatTime(unsigned long time) {
+String formatTime(unsigned long time) {
     int minutes = time / 60000;
     int seconds = time / 1000 % 60;
     int miliseconds = time % 1000 / 100;
-    char* formattedTime = malloc(6);
+    char formattedTime[6];
     if (time > 60000) {
         sprintf(formattedTime, "%02d:%02d", minutes, seconds);
     } else {
         sprintf(formattedTime, "%02d.%d", seconds, miliseconds);
     }
-    return formattedTime;
+    return String(formattedTime);
 }
 
 void decrementTime() {
@@ -53,16 +56,13 @@ void decrementTime() {
 }
 
 void updateClock() {
-    const char* whiteFormattedTime = formatTime(whitePlayerTime);
-    const char* blackFormattedTime = formatTime(blackPlayerTime);
+    String whiteFormattedTime = formatTime(whitePlayerTime);
+    String blackFormattedTime = formatTime(blackPlayerTime);
 
     lcd.setCursor(0, 1);
     lcd.print(whiteFormattedTime);
     lcd.setCursor(11, 1);
     lcd.print(blackFormattedTime);
-
-    delete[] whiteFormattedTime;
-    delete[] blackFormattedTime;
 
     decrementTime();
 }
@@ -270,7 +270,7 @@ void makeMove(int fromSquare, int toSquare, MOVE_TYPES moveTypes) {
 void verifyPosition() {
     for (int i = 0; i < 64; i++) {
         float channelValue = readMux(i);
-        if (channelValue < 3.0 && BIT_BOARD[i] != EMPTY) {
+        if (channelValue < peakValue && BIT_BOARD[i] != EMPTY) {
             lcd.setCursor(0, 1);
             lcd.print(getSquare(i));
             lcd.print(" is missing!");
@@ -283,11 +283,11 @@ void verifyPosition() {
 
 void performCastling(MoveType castlingType, int rookToSquare, int rookFromSquare) {
     // Wait for the rook to appear on the target square
-    while (readMux(rookToSquare) < 3.0) {
+    while (readMux(rookToSquare) < peakValue) {
         updateClock();
         delay(90);
         // Wait for the rook to leave the square
-        while (readMux(rookFromSquare) > 3.0) {
+        while (readMux(rookFromSquare) > peakValue) {
             updateClock();
             delay(90);
         }
@@ -325,8 +325,76 @@ void handleIllegalMove() {
     showWhoseMove();
 }
 
+void chooseTimeControl() {
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print("Choose");
+
+    lcd.setCursor(0, 1);
+    lcd.print("time control");
+    bool timeControlChosen = false;
+    while(!timeControlChosen) {
+        for (int i = 16; i < 48; i++) {
+            float squareValue = readMux(i);
+            if (squareValue > peakValue) {
+                timeControlChosen = true;
+                switch(i) {
+                    case 16:
+                        whitePlayerTime = 180000;
+                        blackPlayerTime = 180000;
+                        timeIncrement = 0;
+                        break;
+                    case 24:
+                        whitePlayerTime = 180000;
+                        blackPlayerTime = 180000;
+                        timeIncrement = 2000;
+                        break;
+                    case 32:
+                        whitePlayerTime = 300000;
+                        blackPlayerTime = 300000;
+                        timeIncrement = 0;
+                        break;
+                    case 40:
+                        whitePlayerTime = 300000;
+                        blackPlayerTime = 300000;
+                        timeIncrement = 2000;
+                        break;
+                    case 17:
+                        whitePlayerTime = 600000;
+                        blackPlayerTime = 600000;
+                        timeIncrement = 0;
+                        break;
+                    case 25:
+                        whitePlayerTime = 600000;
+                        blackPlayerTime = 600000;
+                        timeIncrement = 5000;
+                        break;
+                    case 33:
+                        whitePlayerTime = 900000;
+                        blackPlayerTime = 900000;
+                        timeIncrement = 0;
+                        break;
+                    case 41:
+                        whitePlayerTime = 900000;
+                        blackPlayerTime = 900000;
+                        timeIncrement = 10000;
+                        break;
+                    case 18:
+                        whitePlayerTime = 5400000;
+                        blackPlayerTime = 5400000;
+                        timeIncrement = 30000;
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            }
+        }
+    }
+}
+
 void setup() {
-    Serial.begin(9600);
+    Serial.begin(115200);
     pinMode(s0, OUTPUT);
     pinMode(s1, OUTPUT);
     pinMode(s2, OUTPUT);
@@ -350,6 +418,8 @@ void setup() {
     savePosition(); // save initial position
     lcd.setCursor(0, 0);   //Set cursor to character 2 on line 0
     delay(1000);
+    chooseTimeControl();
+    delay(2000);
 
     lcd.clear();
     lcd.print("White to move!");
@@ -364,7 +434,7 @@ void loop() {
 
         for (int i = 0; i < 64; i++) {
             float channelValue = readMux(i);
-            if (channelValue < 3.0 && BIT_BOARD[i] && PositionDynamics.pickedSquare != i &&
+            if (channelValue < peakValue && BIT_BOARD[i] && PositionDynamics.pickedSquare != i &&
                 PositionDynamics.attackedPieceSquare != i) {
                 // enemy piece is picked
                 if (!(BIT_BOARD[i] & PositionDynamics.whoseMove)) {
@@ -387,7 +457,7 @@ void loop() {
                 lcd.print(squareWithPiece);
                 lcd.print(" is picked!");
             }
-            if (PositionDynamics.attackedPieceSquare == i && channelValue > 3.0 &&
+            if (PositionDynamics.attackedPieceSquare == i && channelValue > peakValue &&
                 PositionDynamics.pickedSquare == -1) {
                 PositionDynamics.moveTypes.capture = false;
                 PositionDynamics.attackedPieceSquare = -1;
@@ -399,7 +469,7 @@ void loop() {
                 lcd.print(squareWithPiece);
                 break;
             }
-            if (channelValue > 3.0 && (BIT_BOARD[i] == EMPTY || PositionDynamics.attackedPieceSquare == i)) {
+            if (channelValue > peakValue && (BIT_BOARD[i] == EMPTY || PositionDynamics.attackedPieceSquare == i)) {
                 int moveOffset = i - PositionDynamics.pickedSquare;
                 // white's move
                 if (PositionDynamics.whoseMove == WHITE) {

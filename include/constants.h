@@ -8,6 +8,7 @@ unsigned long positionsHistory[MAX_POSITIONS];
 
 int currentPositionIndex = -1;
 
+// blitz time control 3 | 2
 unsigned long whitePlayerTime = 180000;
 unsigned long blackPlayerTime = 180000;
 int timeIncrement = 2000;
