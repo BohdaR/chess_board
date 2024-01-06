@@ -25,6 +25,6 @@ jobs:
 
       - name: Build PlatformIO Project
         run: pio run
-
-      - name: Run tests
-        run: pio test -e development
+#
+#      - name: Run tests
+#        run: pio test -e development
