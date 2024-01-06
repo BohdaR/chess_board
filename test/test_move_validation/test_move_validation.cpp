@@ -1,0 +1,517 @@
+#include "unity.h"
+#include "../../include/move_validation.h"
+
+void setUp(void) {
+    // set stuff up here
+}
+
+void tearDown(void) {
+
+}
+
+// Test withinTheBoard function
+void square_should_be_withing_the_board() {
+    TEST_ASSERT_TRUE(withinTheBoard(0));
+    TEST_ASSERT_TRUE(withinTheBoard(63));
+    TEST_ASSERT_TRUE(withinTheBoard(33));
+
+    TEST_ASSERT_FALSE(withinTheBoard(-1));
+    TEST_ASSERT_FALSE(withinTheBoard(64));
+}
+
+// Test isOnTheSameDiagonal function
+void should_be_on_the_same_diagonal() {
+    // a1 and h8
+    TEST_ASSERT_TRUE(isOnTheSameDiagonal(0, 63));
+    // c4 and d5
+    TEST_ASSERT_TRUE(isOnTheSameDiagonal(26, 35));
+    // h1 and a8
+    TEST_ASSERT_TRUE(isOnTheSameDiagonal(7, 56));
+    // f4 and g3
+    TEST_ASSERT_TRUE(isOnTheSameDiagonal(29, 22));
+}
+
+// Test isOnTheSameDiagonal function
+void should_not_be_on_the_same_diagonal() {
+    // a1 and h7
+    TEST_ASSERT_FALSE(isOnTheSameDiagonal(0, 62));
+    // b4 and d5
+    TEST_ASSERT_FALSE(isOnTheSameDiagonal(25, 35));
+    // h1 and a7
+    TEST_ASSERT_FALSE(isOnTheSameDiagonal(7, 48));
+    // c2 and c7
+    TEST_ASSERT_FALSE(isOnTheSameDiagonal(10, 50));
+}
+
+// Test isOnTheSameFirstDiagonal function
+void should_be_on_the_same_first_diagonal(void) {
+    // a1 and h8
+    TEST_ASSERT_TRUE(isOnTheSameFirstDiagonal(0, 63));
+    // a3 and f8
+    TEST_ASSERT_TRUE(isOnTheSameFirstDiagonal(16, 61));
+    // e3 and g5
+    TEST_ASSERT_TRUE(isOnTheSameFirstDiagonal(20, 38));
+}
+
+// Test isOnTheSameFirstDiagonal function
+void should_not_be_on_the_same_first_diagonal(void) {
+    // Check on the squares with the same value by mod 9
+    TEST_ASSERT_FALSE(isOnTheSameFirstDiagonal(39, 48));
+    TEST_ASSERT_FALSE(isOnTheSameFirstDiagonal(14, 32));
+    TEST_ASSERT_FALSE(isOnTheSameFirstDiagonal(14, 41));
+}
+
+// Test isOnTheSameSecondDiagonal function
+void should_be_on_the_same_second_diagonal(void) {
+    // h1 and a8
+    TEST_ASSERT_TRUE(isOnTheSameSecondDiagonal(7, 56));
+    // f2 and b6
+    TEST_ASSERT_TRUE(isOnTheSameSecondDiagonal(13, 41));
+    // h5 and f7
+    TEST_ASSERT_TRUE(isOnTheSameSecondDiagonal(39, 53));
+}
+
+// Test isOnTheSameSecondDiagonal function
+void should_not_be_on_the_same_second_diagonal(void) {
+    // Check on the squares with the same value by mod 7
+    TEST_ASSERT_FALSE(isOnTheSameSecondDiagonal(0, 7));
+    TEST_ASSERT_FALSE(isOnTheSameSecondDiagonal(0, 56));
+    TEST_ASSERT_FALSE(isOnTheSameSecondDiagonal(16, 23));
+}
+
+// Test isOnTheSameRank function
+void should_be_on_the_same_rank(void) {
+    // a1 and h1
+    TEST_ASSERT_TRUE(isOnTheSameRank(0, 7));
+    // a8 and h8
+    TEST_ASSERT_TRUE(isOnTheSameRank(56, 63));
+    // b5 and e5
+    TEST_ASSERT_TRUE(isOnTheSameRank(33, 36));
+}
+// Test isOnTheSameRank function
+void should_not_be_on_the_same_rank(void) {
+    // a1 and a2
+    TEST_ASSERT_FALSE(isOnTheSameRank(0, 8));
+    // d6 and c5
+    TEST_ASSERT_FALSE(isOnTheSameRank(43, 34));
+    // b2 and g7
+    TEST_ASSERT_FALSE(isOnTheSameRank(9, 54));
+}
+
+// Test isOnTheSameFile function
+void should_be_on_the_same_file(void) {
+    // a1 and a8
+    TEST_ASSERT_TRUE(isOnTheSameFile(0, 56));
+    // h1 and h8
+    TEST_ASSERT_TRUE(isOnTheSameFile(63, 7));
+    // d2 and d7
+    TEST_ASSERT_TRUE(isOnTheSameFile(11, 51));
+}
+
+// Test isOnTheSameFile function
+void should_not_be_on_the_same_file(void) {
+    // a1 and b3
+    TEST_ASSERT_FALSE(isOnTheSameRank(0, 17));
+    // d4 and e6
+    TEST_ASSERT_FALSE(isOnTheSameRank(27, 44));
+    // f6 and g5
+    TEST_ASSERT_FALSE(isOnTheSameRank(45, 38));
+}
+
+// Test unexpected input for on the same line functions
+void should_handle_unexpected_input(void) {
+    // Test outside the board
+    TEST_ASSERT_FALSE(isOnTheSameDiagonal(-9, 0));
+    TEST_ASSERT_FALSE(isOnTheSameDiagonal(-7, 0));
+    TEST_ASSERT_FALSE(isOnTheSameDiagonal(-7, -14));
+
+    TEST_ASSERT_FALSE(isOnTheSameFirstDiagonal(-18, -9));
+    TEST_ASSERT_FALSE(isOnTheSameFirstDiagonal(63, 72));
+
+    TEST_ASSERT_FALSE(isOnTheSameSecondDiagonal(56, 64));
+    TEST_ASSERT_FALSE(isOnTheSameSecondDiagonal(-7, 0));
+
+    TEST_ASSERT_FALSE(isOnTheSameFile(0, -8));
+    TEST_ASSERT_FALSE(isOnTheSameFile(0, 64));
+
+    TEST_ASSERT_FALSE(isOnTheSameRank(-8, -1));
+    TEST_ASSERT_FALSE(isOnTheSameRank(64, 66));
+}
+
+// Test isPseudoLegalKnightMove function
+void should_check_pseudo_legal_knight_move(void) {
+    int knightSquare = 35;
+    BIT_BOARD[knightSquare] = WHITE_KNIGHT;
+    for (int offset: KNIGHT_MOVE_OFFSETS) {
+        int targetSquare = knightSquare + offset;
+        TEST_ASSERT_TRUE(isPseudoLegalKnightMove(knightSquare, targetSquare));
+    }
+    // Check in case of capture
+    TEST_ASSERT_TRUE(isPseudoLegalKnightMove(knightSquare, 52));
+    TEST_ASSERT_TRUE(isPseudoLegalKnightMove(knightSquare, 50));
+
+    // Check in case of moving to the square with own piece
+    BIT_BOARD[knightSquare] = BLACK_KNIGHT;
+    TEST_ASSERT_FALSE(isPseudoLegalKnightMove(knightSquare, 52));
+    TEST_ASSERT_FALSE(isPseudoLegalKnightMove(knightSquare, 50));
+
+    BIT_BOARD[knightSquare] = EMPTY;
+
+    // Check illegal input
+    TEST_ASSERT_FALSE(isPseudoLegalKnightMove(1, -9));
+    TEST_ASSERT_FALSE(isPseudoLegalKnightMove(6, 16));
+}
+
+// Test isPseudoLegalPawnMove function
+void should_check_pseudo_legal_pawn_move(void) {
+    // Check one square move
+    TEST_ASSERT_TRUE(isPseudoLegalPawnMove(11, 19));
+    TEST_ASSERT_TRUE(isPseudoLegalPawnMove(51, 43));
+
+    // Check two square first move
+    TEST_ASSERT_TRUE(isPseudoLegalPawnMove(11, 27));
+    TEST_ASSERT_TRUE(isPseudoLegalPawnMove(51, 35));
+
+    // Check two square not first move
+    BIT_BOARD[23] = WHITE_PAWN;
+    TEST_ASSERT_FALSE(isPseudoLegalPawnMove(23, 39));
+    BIT_BOARD[40] = BLACK_PAWN;
+    TEST_ASSERT_FALSE(isPseudoLegalPawnMove(40, 24));
+    BIT_BOARD[23] = EMPTY;
+    BIT_BOARD[40] = EMPTY;
+
+    // Check two squares if pawn is blocked
+    BIT_BOARD[19] = BLACK_PAWN;
+    TEST_ASSERT_FALSE(isPseudoLegalPawnMove(11, 27));
+    BIT_BOARD[43] = WHITE_PAWN;
+    TEST_ASSERT_FALSE(isPseudoLegalPawnMove(51, 35));
+
+    // Check captures
+    TEST_ASSERT_TRUE(isPseudoLegalPawnMove(10, 19));
+    TEST_ASSERT_TRUE(isPseudoLegalPawnMove(12, 19));
+
+    TEST_ASSERT_TRUE(isPseudoLegalPawnMove(50, 43));
+    TEST_ASSERT_TRUE(isPseudoLegalPawnMove(52, 43));
+
+    // Check illegal moves
+    BIT_BOARD[19] = EMPTY;
+    BIT_BOARD[43] = EMPTY;
+    TEST_ASSERT_FALSE(isPseudoLegalPawnMove(10, 19));
+    TEST_ASSERT_FALSE(isPseudoLegalPawnMove(12, 19));
+
+    TEST_ASSERT_FALSE(isPseudoLegalPawnMove(50, 43));
+    TEST_ASSERT_FALSE(isPseudoLegalPawnMove(52, 43));
+}
+
+// Test isPseudoLegalKingMove function
+void should_check_pseudo_legal_king_move(void) {
+    // Here kings do not have any moves 'cause they're blocked by own pieces
+    for (int offset: KING_MOVE_OFFSETS) {
+        int whiteTargetSquare = WHITE_KING_START_SQUARE + offset;
+        int blackTargetSquare = BLACK_KING_START_SQUARE + offset;
+        TEST_ASSERT_FALSE(isPseudoLegalKingMove(WHITE_KING_START_SQUARE, whiteTargetSquare));
+        TEST_ASSERT_FALSE(isPseudoLegalKingMove(BLACK_KING_START_SQUARE, blackTargetSquare));
+    }
+
+    // Put kings to the center to unsure that they have moves
+    BIT_BOARD[WHITE_KING_START_SQUARE] = EMPTY;
+    BIT_BOARD[BLACK_KING_START_SQUARE] = EMPTY;
+    whiteKingSquare = 25;
+    blackKingSquare = 38;
+    BIT_BOARD[whiteKingSquare] = WHITE_KING;
+    BIT_BOARD[blackKingSquare] = BLACK_KING;
+
+    // Check whether they can move
+    for (int offset: KING_MOVE_OFFSETS) {
+        int whiteTargetSquare = whiteKingSquare + offset;
+        int blackTargetSquare = blackKingSquare + offset;
+        TEST_ASSERT_TRUE(isPseudoLegalKingMove(whiteKingSquare, whiteTargetSquare));
+        TEST_ASSERT_TRUE(isPseudoLegalKingMove(blackKingSquare, blackTargetSquare));
+    }
+    whiteKingSquare = WHITE_KING_START_SQUARE;
+    blackKingSquare = BLACK_KING_START_SQUARE;
+    BIT_BOARD[whiteKingSquare] = WHITE_KING;
+    BIT_BOARD[blackKingSquare] = BLACK_KING;
+    BIT_BOARD[25] = EMPTY;
+    BIT_BOARD[38] = EMPTY;
+}
+
+// Test isPseudoLegalBishopMove function
+void should_check_pseudo_legal_bishop_move(void) {
+    // Bishops can not move from the start squares
+    // Check weather bishop can move to the square with the same color piece
+    TEST_ASSERT_FALSE(isPseudoLegalBishopMove(2, 9));
+    TEST_ASSERT_FALSE(isPseudoLegalBishopMove(2, 11));
+    TEST_ASSERT_FALSE(isPseudoLegalBishopMove(61, 47));
+    TEST_ASSERT_FALSE(isPseudoLegalBishopMove(5, -6));
+    TEST_ASSERT_FALSE(isPseudoLegalBishopMove(58, 65));
+
+    // Put bishop on a1 and clear the a1-h8 diagonal
+    BIT_BOARD[0] = WHITE_BISHOP;
+    BIT_BOARD[9] = EMPTY;
+    BIT_BOARD[54] = EMPTY;
+
+    // Verify taking and movement on the longest first diagonal a1-h8
+    TEST_ASSERT_TRUE(isPseudoLegalBishopMove(0, 63));
+
+    // Put bishop on h1 and clear the h1-a8 diagonal
+    BIT_BOARD[7] = WHITE_BISHOP;
+    BIT_BOARD[14] = EMPTY;
+    BIT_BOARD[49] = EMPTY;
+
+    // Verify taking and movement on the longest second diagonal h1-a8
+    TEST_ASSERT_TRUE(isPseudoLegalBishopMove(7, 56));
+
+    // Check movement along diagonals in all directions
+    BIT_BOARD[36] = BLACK_BISHOP;
+    TEST_ASSERT_TRUE(isPseudoLegalBishopMove(36, 54));
+    TEST_ASSERT_TRUE(isPseudoLegalBishopMove(36, 0));
+    TEST_ASSERT_TRUE(isPseudoLegalBishopMove(36, 22));
+    TEST_ASSERT_TRUE(isPseudoLegalBishopMove(36, 43));
+
+    // Bishop can not move to a different color square
+    TEST_ASSERT_FALSE(isPseudoLegalBishopMove(0, 17));
+
+    // Restore board state
+    BIT_BOARD[0] = WHITE_ROOK;
+    BIT_BOARD[7] = WHITE_ROOK;
+    BIT_BOARD[9] = WHITE_PAWN;
+    BIT_BOARD[14] = WHITE_PAWN;
+    BIT_BOARD[36] = EMPTY;
+    BIT_BOARD[54] = BLACK_PAWN;
+    BIT_BOARD[49] = BLACK_PAWN;
+}
+
+// Test isPseudoLegalRookMove function
+void should_check_pseudo_legal_rook_move(void) {
+    // Rooks aren't able to move 'cause they're blocked by own pieces
+    TEST_ASSERT_FALSE(isPseudoLegalRookMove(0, 24));
+    TEST_ASSERT_FALSE(isPseudoLegalRookMove(63, 39));
+
+    // Rooks can't move to the same color piece squares
+    TEST_ASSERT_FALSE(isPseudoLegalRookMove(0, 8));
+    TEST_ASSERT_FALSE(isPseudoLegalRookMove(0, 1));
+    TEST_ASSERT_FALSE(isPseudoLegalRookMove(63, 62));
+    TEST_ASSERT_FALSE(isPseudoLegalRookMove(63, 55));
+
+    // Rooks can move only withing board
+    TEST_ASSERT_FALSE(isPseudoLegalRookMove(63, 71));
+    TEST_ASSERT_FALSE(isPseudoLegalRookMove(0, -8));
+
+    // Rooks can't move through enemy pieces
+    BIT_BOARD[8] = EMPTY;
+    TEST_ASSERT_FALSE(isPseudoLegalRookMove(0, 56));
+    TEST_ASSERT_FALSE(isPseudoLegalRookMove(56, 0));
+
+    // Check moves along the rank
+    BIT_BOARD[48] = EMPTY;
+    TEST_ASSERT_TRUE(isPseudoLegalRookMove(0, 56));
+    TEST_ASSERT_TRUE(isPseudoLegalRookMove(0, 8));
+
+    // Check moves along the file
+    BIT_BOARD[39] = WHITE_ROOK;
+    TEST_ASSERT_TRUE(isPseudoLegalRookMove(39, 32));
+    TEST_ASSERT_TRUE(isPseudoLegalRookMove(39, 38));
+
+    // Rook can not move through pieces
+    BIT_BOARD[36] = BLACK_ROOK;
+    TEST_ASSERT_FALSE(isPseudoLegalRookMove(39, 35));
+    TEST_ASSERT_FALSE(isPseudoLegalRookMove(39, 32));
+    TEST_ASSERT_TRUE(isPseudoLegalRookMove(39, 36));
+    BIT_BOARD[39] = EMPTY;
+    BIT_BOARD[32] = WHITE_ROOK;
+    TEST_ASSERT_FALSE(isPseudoLegalRookMove(32, 37));
+    TEST_ASSERT_FALSE(isPseudoLegalRookMove(32, 39));
+    TEST_ASSERT_TRUE(isPseudoLegalRookMove(32, 36));
+
+    // Check moves along the file
+    BIT_BOARD[36] = EMPTY;
+    TEST_ASSERT_TRUE(isPseudoLegalRookMove(32, 39));
+    TEST_ASSERT_TRUE(isPseudoLegalRookMove(32, 33));
+
+    // Restore board state
+    BIT_BOARD[32] = EMPTY;
+    BIT_BOARD[48] = BLACK_PAWN;
+    BIT_BOARD[8] = WHITE_PAWN;
+}
+
+// Test isPseudoLegalQueenMove function
+void should_check_pseudo_legal_queen_move(void) {
+    // Queen can not move outside the board
+    TEST_ASSERT_FALSE(isPseudoLegalQueenMove(3, -11));
+    TEST_ASSERT_FALSE(isPseudoLegalQueenMove(59, 67));
+    TEST_ASSERT_FALSE(isPseudoLegalQueenMove(3, -12));
+
+    // Clear the board
+    clearBoard();
+
+    // Place two test queens
+    BIT_BOARD[0] = WHITE_QUEEN;
+    BIT_BOARD[7] = BLACK_QUEEN;
+
+    // Check rank moves
+    TEST_ASSERT_TRUE(isPseudoLegalQueenMove(0, 7));
+    TEST_ASSERT_TRUE(isPseudoLegalQueenMove(0, 6));
+    TEST_ASSERT_TRUE(isPseudoLegalQueenMove(0, 1));
+    TEST_ASSERT_TRUE(isPseudoLegalQueenMove(7, 0));
+    TEST_ASSERT_TRUE(isPseudoLegalQueenMove(7, 1));
+    TEST_ASSERT_TRUE(isPseudoLegalQueenMove(7, 6));
+
+    // Can not move through pieces (along the rank)
+    BIT_BOARD[4] = WHITE_ROOK; // Place the piece in the middle of the line
+    TEST_ASSERT_FALSE(isPseudoLegalQueenMove(0, 5));
+    TEST_ASSERT_FALSE(isPseudoLegalQueenMove(7, 3));
+
+    // Check file moves
+    BIT_BOARD[56] = BLACK_QUEEN; // Place test queen
+    TEST_ASSERT_TRUE(isPseudoLegalQueenMove(0, 56));
+    TEST_ASSERT_TRUE(isPseudoLegalQueenMove(0, 48));
+    TEST_ASSERT_TRUE(isPseudoLegalQueenMove(0, 8));
+    TEST_ASSERT_TRUE(isPseudoLegalQueenMove(56, 48));
+    TEST_ASSERT_TRUE(isPseudoLegalQueenMove(56, 8));
+    TEST_ASSERT_TRUE(isPseudoLegalQueenMove(56, 0));
+
+    // Can not move through pieces (along the file)
+    BIT_BOARD[32] = WHITE_ROOK; // Place the piece in the middle of the line
+    TEST_ASSERT_FALSE(isPseudoLegalQueenMove(0, 40));
+    TEST_ASSERT_FALSE(isPseudoLegalQueenMove(56, 24));
+
+    // Check first diagonal moves
+    BIT_BOARD[63] = BLACK_QUEEN; // Place test queen
+    TEST_ASSERT_TRUE(isPseudoLegalQueenMove(0, 63));
+    TEST_ASSERT_TRUE(isPseudoLegalQueenMove(0, 54));
+    TEST_ASSERT_TRUE(isPseudoLegalQueenMove(0, 9));
+    TEST_ASSERT_TRUE(isPseudoLegalQueenMove(63, 54));
+    TEST_ASSERT_TRUE(isPseudoLegalQueenMove(63, 9));
+    TEST_ASSERT_TRUE(isPseudoLegalQueenMove(63, 0));
+
+    // Can not move through pieces (along the first diagonal)
+    BIT_BOARD[36] = BLACK_PAWN; // Place the piece in the middle of the line
+    TEST_ASSERT_FALSE(isPseudoLegalQueenMove(0, 45));
+    TEST_ASSERT_FALSE(isPseudoLegalQueenMove(63, 27));
+
+    // Check second diagonal moves
+    BIT_BOARD[7] = WHITE_QUEEN; // Place test queen
+    TEST_ASSERT_TRUE(isPseudoLegalQueenMove(7, 56));
+    TEST_ASSERT_TRUE(isPseudoLegalQueenMove(7, 49));
+    TEST_ASSERT_TRUE(isPseudoLegalQueenMove(7, 14));
+    TEST_ASSERT_TRUE(isPseudoLegalQueenMove(56, 49));
+    TEST_ASSERT_TRUE(isPseudoLegalQueenMove(56, 14));
+    TEST_ASSERT_TRUE(isPseudoLegalQueenMove(56, 7));
+
+    // Can not move through pieces (along the second diagonal)
+    BIT_BOARD[35] = BLACK_PAWN; // Place the piece in the middle of the line
+    TEST_ASSERT_FALSE(isPseudoLegalQueenMove(7, 42));
+    TEST_ASSERT_FALSE(isPseudoLegalQueenMove(56, 28));
+
+    // Restore the board
+    resetBitBoard();
+}
+
+// Test isPseudoLegalMove function
+void should_check_pseudo_legal_move(void) {
+    // test knight
+    TEST_ASSERT_TRUE(isPseudoLegalKnightMove(1, 18));
+    BIT_BOARD[1] = WHITE_QUEEN;
+    TEST_ASSERT_FALSE(isPseudoLegalQueenMove(1, 18));
+    BIT_BOARD[1] = WHITE_BISHOP;
+    TEST_ASSERT_FALSE(isPseudoLegalBishopMove(1, 18));
+    BIT_BOARD[1] = WHITE_ROOK;
+    TEST_ASSERT_FALSE(isPseudoLegalRookMove(1, 18));
+    BIT_BOARD[1] = WHITE_KING;
+    TEST_ASSERT_FALSE(isPseudoLegalKingMove(1, 18));
+    BIT_BOARD[1] = WHITE_PAWN;
+    TEST_ASSERT_FALSE(isPseudoLegalKingMove(1, 18));
+
+    // Place white knight back
+    BIT_BOARD[1] = WHITE_KNIGHT;
+
+    // test king
+    BIT_BOARD[12] = EMPTY;
+    TEST_ASSERT_FALSE(isPseudoLegalMove(4, 20));
+    BIT_BOARD[4] = WHITE_QUEEN;
+    TEST_ASSERT_TRUE(isPseudoLegalMove(4, 20));
+    BIT_BOARD[4] = WHITE_ROOK;
+    TEST_ASSERT_TRUE(isPseudoLegalMove(4, 20));
+
+    BIT_BOARD[13] = EMPTY;
+    BIT_BOARD[4] = WHITE_KING;
+    TEST_ASSERT_FALSE(isPseudoLegalMove(4, 22));
+    BIT_BOARD[4] = WHITE_BISHOP;
+    TEST_ASSERT_TRUE(isPseudoLegalMove(4, 22));
+
+    BIT_BOARD[12] = WHITE_KING;
+    TEST_ASSERT_TRUE(isPseudoLegalMove(12, 21));
+
+    BIT_BOARD[12] = WHITE_PAWN;
+    BIT_BOARD[13] = WHITE_PAWN;
+    BIT_BOARD[4] = WHITE_KING;
+    TEST_ASSERT_FALSE(isPseudoLegalMove(12, 21));
+
+    // test rook
+    BIT_BOARD[19] = BLACK_PAWN;
+    TEST_ASSERT_TRUE(isPseudoLegalMove(10, 19));
+    BIT_BOARD[10] = WHITE_ROOK;
+    TEST_ASSERT_FALSE(isPseudoLegalMove(10, 19));
+    BIT_BOARD[10] = WHITE_BISHOP;
+    TEST_ASSERT_TRUE(isPseudoLegalMove(10, 19));
+    BIT_BOARD[10] = WHITE_QUEEN;
+    TEST_ASSERT_TRUE(isPseudoLegalMove(10, 19));
+    BIT_BOARD[10] = WHITE_PAWN;
+    BIT_BOARD[19] = EMPTY;
+
+    // test bishop
+    TEST_ASSERT_TRUE(isPseudoLegalMove(10, 18));
+    BIT_BOARD[10] = WHITE_QUEEN;
+    TEST_ASSERT_TRUE(isPseudoLegalMove(10, 18));
+    BIT_BOARD[10] = WHITE_BISHOP;
+    TEST_ASSERT_FALSE(isPseudoLegalMove(10, 18));
+    BIT_BOARD[10] = WHITE_PAWN;
+
+    // test queen
+    TEST_ASSERT_FALSE(isPseudoLegalMove(10, 42));
+    BIT_BOARD[10] = WHITE_QUEEN;
+    TEST_ASSERT_TRUE(isPseudoLegalMove(10, 42));
+    BIT_BOARD[10] = WHITE_PAWN;
+
+    // There is no need to test pawn since we already tested it with each piece separately
+}
+
+int runUnityTests(void) {
+    UNITY_BEGIN();
+    RUN_TEST(square_should_be_withing_the_board);
+
+    RUN_TEST(should_be_on_the_same_diagonal);
+    RUN_TEST(should_not_be_on_the_same_diagonal);
+
+    RUN_TEST(should_be_on_the_same_first_diagonal);
+    RUN_TEST(should_not_be_on_the_same_first_diagonal);
+
+    RUN_TEST(should_be_on_the_same_second_diagonal);
+    RUN_TEST(should_not_be_on_the_same_second_diagonal);
+
+    RUN_TEST(should_be_on_the_same_rank);
+    RUN_TEST(should_not_be_on_the_same_rank);
+
+    RUN_TEST(should_be_on_the_same_file);
+    RUN_TEST(should_not_be_on_the_same_file);
+
+    RUN_TEST(should_check_pseudo_legal_knight_move);
+    RUN_TEST(should_check_pseudo_legal_pawn_move);
+    RUN_TEST(should_check_pseudo_legal_king_move);
+    RUN_TEST(should_check_pseudo_legal_bishop_move);
+    RUN_TEST(should_check_pseudo_legal_rook_move);
+    RUN_TEST(should_check_pseudo_legal_queen_move);
+    RUN_TEST(should_check_pseudo_legal_move);
+
+    RUN_TEST(should_handle_unexpected_input);
+    return UNITY_END();
+}
+
+void setup() {
+    runUnityTests();
+}
+
+void loop() {
+
+}

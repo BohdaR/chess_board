@@ -2,6 +2,20 @@
 #define constants_h
 #define MAX_POSITIONS 100
 
+//Mux control pins
+int s0 = 32;
+int s1 = 33;
+int s2 = 25;
+int s3 = 26;
+int s4 = 27;
+int s5 = 14;
+
+//Mux in "SIG" pin
+int SIG_pin = 35;
+
+// Peak value to treat sensor as detected
+float peakValue = 1.8;
+
 #include <LiquidCrystal_I2C.h>
 LiquidCrystal_I2C lcd(0x27, 16, 2);  // set the LCD address to 0x3F for 16 chars and 2 line display
 unsigned long positionsHistory[MAX_POSITIONS];
@@ -36,6 +50,9 @@ enum Piece {
     BLACK_QUEEN = 66,
     BLACK_KING = 130
 };
+
+const int KNIGHT_MOVE_OFFSETS[8] = {17, -17, 15, -15, 10, -10, 6, -6};
+const int KING_MOVE_OFFSETS[8] = {1, -1, 8, -8, 7, -7, 9, -9};
 
 enum Color {
     WHITE = 1,

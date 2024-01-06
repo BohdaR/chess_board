@@ -2,6 +2,10 @@
 #define CASTLING_H
 
 #include "checkmate.h"
+#include "stalemate.h"
+#include "helpers.h"
+#include "clock.h"
+#include "threefold_repetition.h"
 
 bool canCastleTheKing(MoveType castlingType) {
     int kingPosition = (PositionDynamics.whoseMove == WHITE) ? WHITE_KING_START_SQUARE : BLACK_KING_START_SQUARE;
@@ -39,6 +43,55 @@ bool canCastleTheKing(MoveType castlingType) {
     }
 
     return canCastle;
+}
+
+String getCastlingNotation(MoveType castlingType, MOVE_TYPES moveTypes) {
+    String notation = "O-O";
+    if (castlingType == LONG_CASTLING) {
+        notation = "O-O-O";
+    }
+
+    if (moveTypes.checkmate) {
+        notation += "#";
+        return notation;
+    }
+
+    if (moveTypes.check) {
+        notation += "+";
+    }
+    return notation;
+}
+
+void performCastling(MoveType castlingType, int rookToSquare, int rookFromSquare) {
+    // Wait for the rook to appear on the target square
+    while (readMux(rookToSquare) < peakValue) {
+        updateClock();
+        delay(90);
+        // Wait for the rook to leave the square
+        while (readMux(rookFromSquare) > peakValue) {
+            updateClock();
+            delay(90);
+        }
+    }
+
+    updatePosition(rookFromSquare, rookToSquare);
+    PositionDynamics.moveTypes.check = isKingInCheck(getOppositeColorKingSquare());
+    PositionDynamics.moveTypes.checkmate = isCheckMate(getOppositeColorKingSquare());
+    if (isStalemate(getOppositeColorKingSquare())) {
+        PositionDynamics.moveTypes.draw = true;
+        showDrawMessage("Stalemate!");
+        return;
+    }
+
+    applyIncrement();
+    toggleWhoseMove();
+    savePosition();
+    showWhoseMove();
+//    lcd.setCursor(0, 1);
+//    lcd.print(getCastlingNotation(castlingType, PositionDynamics.moveTypes));
+    Serial.println(getCastlingNotation(castlingType, PositionDynamics.moveTypes));
+
+    resetPositionDynamics();
 }
 
 #endif

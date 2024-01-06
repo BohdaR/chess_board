@@ -1,9 +1,17 @@
 #ifndef MOVE_VALIDATION_H
 #define MOVE_VALIDATION_H
 
-#include "constants.h"
+#include "helpers.h"
+
+bool withinTheBoard(int square) {
+    if (square < 0 || square > 63) return false;
+
+    return true;
+}
 
 bool isOnTheSameDiagonal(int firstSquare, int secondSquare) {
+    if (!(withinTheBoard(firstSquare) && withinTheBoard(secondSquare))) return false;
+
     // check whether two pieces on the same diagonal such as a1-h8
     return abs(firstSquare / 8 - secondSquare / 8) == abs(firstSquare % 8 - secondSquare % 8);
 }
@@ -19,21 +27,23 @@ bool isOnTheSameSecondDiagonal(int firstSquare, int secondSquare) {
 }
 
 bool isOnTheSameRank(int firstSquare, int secondSquare) {
+    if (!(withinTheBoard(firstSquare) && withinTheBoard(secondSquare))) return false;
+
     return (firstSquare / 8) == (secondSquare / 8);
 }
 
 bool isOnTheSameFile(int firstSquare, int secondSquare) {
+    if (!(withinTheBoard(firstSquare) && withinTheBoard(secondSquare))) return false;
+
     return (firstSquare % 8) == (secondSquare % 8);
 }
 
-bool withinTheBoard(int square) {
-    if (square < 0 || square > 63) {
-        return false;
-    }
-    return true;
-}
-
 bool isPseudoLegalKnightMove(int fromSquare, int toSquare) {
+    if (!(withinTheBoard(fromSquare) && withinTheBoard(toSquare))) return false;
+
+    // check if on the target square has a piece of the same color
+    if (getPieceColor(BIT_BOARD[toSquare]) == getPieceColor(BIT_BOARD[fromSquare])) return false;
+
     int fromRank = fromSquare / 8;
     int toRank = toSquare / 8;
     int fromFile = fromSquare % 8;
@@ -42,16 +52,15 @@ bool isPseudoLegalKnightMove(int fromSquare, int toSquare) {
     int rankDiff = abs(fromRank - toRank);
     int fileDiff = abs(fromFile - toFile);
 
-    // Check if the destination square is reachable from the source square
-    if ((rankDiff == 2 && fileDiff == 1) || (rankDiff == 1 && fileDiff == 2)) {
-        return withinTheBoard(toSquare);
-    }
-
-    // If no matching offset is found, the move is not pseudo-legal
-    return false;
+    return ((rankDiff == 2 && fileDiff == 1) || (rankDiff == 1 && fileDiff == 2));
 }
 
 bool isPseudoLegalPawnMove(int fromSquare, int toSquare) {
+    if (!(withinTheBoard(fromSquare) && withinTheBoard(toSquare))) return false;
+
+    // check if on the target square has a piece of the same color
+    if (getPieceColor(BIT_BOARD[toSquare]) == getPieceColor(BIT_BOARD[fromSquare])) return false;
+
     int rankDifference = (toSquare / 8) - (fromSquare / 8);
     int fileDifference = (toSquare % 8) - (fromSquare % 8);
     int target = BIT_BOARD[toSquare];
@@ -84,42 +93,40 @@ bool isPseudoLegalPawnMove(int fromSquare, int toSquare) {
 }
 
 bool isPseudoLegalKingMove(int fromSquare, int toSquare) {
+    if (!(withinTheBoard(fromSquare) && withinTheBoard(toSquare))) return false;
+
+    // check if on the target square has a piece of the same color
+    if (getPieceColor(BIT_BOARD[toSquare]) == getPieceColor(BIT_BOARD[fromSquare])) return false;
+
     int fromRank = fromSquare / 8;
     int toRank = toSquare / 8;
     int fromFile = fromSquare % 8;
     int toFile = toSquare % 8;
 
     // Check if the destination square is reachable from the source square
-    if (abs(fromRank - toRank) <= 1 && abs(fromFile - toFile) <= 1) {
-        return withinTheBoard(toSquare);
-    }
-
-    // If no matching offset is found, the move is not pseudo-legal
-    return false;
+    return (abs(fromRank - toRank) <= 1 && abs(fromFile - toFile) <= 1);
 }
 
 bool isPseudoLegalBishopMove(int fromSquare, int toSquare) {
-    if (isOnTheSameFirstDiagonal(fromSquare, toSquare)) {
-        int loopEnd = abs(fromSquare / 8 - toSquare / 8);
-        int lookUpDirection = (fromSquare > toSquare) ? -1 : 1;
+    if (!(withinTheBoard(fromSquare) && withinTheBoard(toSquare))) return false;
 
+    // check if on the target square has a piece of the same color
+    if (getPieceColor(BIT_BOARD[toSquare]) == getPieceColor(BIT_BOARD[fromSquare])) return false;
+
+    int loopEnd = abs(fromSquare / 8 - toSquare / 8);
+    int lookUpDirection = (fromSquare > toSquare) ? -1 : 1;
+
+    if (isOnTheSameFirstDiagonal(fromSquare, toSquare)) {
         for (int i = 1; i < loopEnd; i++) {
-            if (BIT_BOARD[fromSquare + i * 9 * lookUpDirection]) {
-                return false;
-            }
+            if (BIT_BOARD[fromSquare + i * 9 * lookUpDirection]) return false;
         }
 
         return true;
     }
 
     if (isOnTheSameSecondDiagonal(fromSquare, toSquare)) {
-        int loopEnd = abs(fromSquare / 8 - toSquare / 8);
-        int lookUpDirection = (fromSquare > toSquare) ? -1 : 1;
-
         for (int i = 1; i < loopEnd; i++) {
-            if (BIT_BOARD[fromSquare + i * 7 * lookUpDirection]) {
-                return false;
-            }
+            if (BIT_BOARD[fromSquare + i * 7 * lookUpDirection]) return false;
         }
 
         return true;
@@ -129,17 +136,21 @@ bool isPseudoLegalBishopMove(int fromSquare, int toSquare) {
 }
 
 bool isPseudoLegalRookMove(int fromSquare, int toSquare) {
+    if (!(withinTheBoard(fromSquare) && withinTheBoard(toSquare))) return false;
+
+    // check if the target square has a piece of the same color
+    if (getPieceColor(BIT_BOARD[toSquare]) == getPieceColor(BIT_BOARD[fromSquare])) return false;
+
+    int lookUpDirection = (fromSquare > toSquare) ? -1 : 1;
+
     if (isOnTheSameFile(fromSquare, toSquare)) {
         int rookRankIndex = fromSquare / 8;
         int targetRankIndex = toSquare / 8;
 
         int loopEnd = abs(rookRankIndex - targetRankIndex);
-        int lookUpDirection = (fromSquare > toSquare) ? -1 : 1;
 
         for (int i = 1; i < loopEnd; i++) {
-            if (BIT_BOARD[fromSquare + i * 8 * lookUpDirection]) {
-                return false;
-            }
+            if (BIT_BOARD[fromSquare + i * 8 * lookUpDirection]) return false;
         }
         return true;
     }
@@ -149,12 +160,9 @@ bool isPseudoLegalRookMove(int fromSquare, int toSquare) {
         int targetFileIndex = toSquare % 8;
 
         int loopEnd = abs(rookFileIndex - targetFileIndex);
-        int lookUpDirection = (fromSquare > toSquare) ? -1 : 1;
 
         for (int i = 1; i < loopEnd; i++) {
-            if (BIT_BOARD[fromSquare + i * lookUpDirection]) {
-                return false;
-            }
+            if (BIT_BOARD[fromSquare + i * lookUpDirection]) return false;
         }
         return true;
     }
@@ -166,23 +174,9 @@ bool isPseudoLegalQueenMove(int fromSquare, int toSquare) {
 }
 
 bool isPseudoLegalMove(int fromSquare, int toSquare) {
-    if (!withinTheBoard(fromSquare)) {
-        return false;
-    }
-
-    if (!withinTheBoard(toSquare)) {
-        return false;
-    }
-
-    // check if on the target square a piece of the same color
-    if ((BIT_BOARD[toSquare] & 3) == (BIT_BOARD[fromSquare] & 3)) {
-        return false;
-    }
-
     // Pseudo-legal moves may still be illegal if they leave the own king in check
     int piece = BIT_BOARD[fromSquare] &
                 252; // here we take only 6 bit of piece 'cause first 2 bits are used for piece color
-    bool isValid = false;
     switch (piece) {
         case BISHOP:
             return isPseudoLegalBishopMove(fromSquare, toSquare);
@@ -197,22 +191,14 @@ bool isPseudoLegalMove(int fromSquare, int toSquare) {
         case KING:
             return isPseudoLegalKingMove(fromSquare, toSquare);
     }
-    return isValid;
+    return false;
 }
 
 bool canAttackTheKing(int pieceSquare, int kingSquare) {
-    if (!withinTheBoard(pieceSquare)) {
-        return false;
-    }
+    if (!(withinTheBoard(pieceSquare) && withinTheBoard(kingSquare))) return false;
 
-    if (!withinTheBoard(kingSquare)) {
-        return false;
-    }
-
-    // check if on the target square a piece of the same color
-    if ((BIT_BOARD[pieceSquare] & 3) == (BIT_BOARD[kingSquare] & 3)) {
-        return false;
-    }
+    // check if on the target square the same color piece
+    if ((BIT_BOARD[pieceSquare] & 3) == (BIT_BOARD[kingSquare] & 3)) return false;
 
     int piece = BIT_BOARD[pieceSquare] &
                 252; // here we take only 6 bit of piece 'cause first 2 bits are used for piece color
@@ -244,7 +230,9 @@ bool canAttackTheKing(int pieceSquare, int kingSquare) {
 
 CheckInformation getChecksInformation(int kingPosition) {
     CheckInformation checksInformation;
-    int kingColor = BIT_BOARD[kingPosition] & 3;
+    if (!withinTheBoard(kingPosition)) return checksInformation;
+
+    int kingColor = getPieceColor(BIT_BOARD[kingPosition]);
 
     const int UP = 1;
     const int DOWN = -1;
@@ -343,10 +331,7 @@ CheckInformation getChecksInformation(int kingPosition) {
     }
 
     // check if there is an enemy knight to give a check
-    const int knightMoveOffsets[] = {17, -17, 15, -15, 10, -10, 6, -6};
-
-    // Check if the destination square is reachable from the source square
-    for (int offset: knightMoveOffsets) {
+    for (int offset: KNIGHT_MOVE_OFFSETS) {
         int enemyPiecePosition = kingPosition + offset;
         if (!withinTheBoard(enemyPiecePosition)) {
             continue;
@@ -372,14 +357,11 @@ bool isKingInCheck(int kingPosition) {
 
 bool isLegalMove(int fromSquare, int toSquare, int ownKingSquare) {
     // Check if the squares are within the board
-    if (!withinTheBoard(fromSquare) || !withinTheBoard(toSquare)) {
-        return false;
-    }
+    if (!(withinTheBoard(fromSquare) && withinTheBoard(toSquare) && withinTheBoard(ownKingSquare))) return false;
 
     // Check if the squares are the same
-    if (fromSquare == toSquare) {
-        return false;
-    }
+    if (fromSquare == toSquare) return false;
+
 
     // Preserve the current state of the board
     Piece fromSquarePiece = BIT_BOARD[fromSquare];
@@ -408,15 +390,15 @@ bool isLegalMove(int fromSquare, int toSquare, int ownKingSquare) {
 }
 
 bool kingHasLegalMoves(int kingPosition) {
-    const int kingMoveOffsets[8] = {1, -1, 8, -8, 7, -7, 9, -9};
-    for (int offset: kingMoveOffsets) {
+    if (!withinTheBoard(kingPosition)) return false;
+
+    for (int offset: KING_MOVE_OFFSETS) {
         int testPosition = kingPosition + offset;
-        if (testPosition < 0 || testPosition > 64) {
-            continue;
-        }
-        if (isLegalMove(kingPosition, testPosition, kingPosition)) {
-            return true;
-        }
+
+        if (!withinTheBoard(kingPosition)) continue;
+
+        if (isLegalMove(kingPosition, testPosition, kingPosition)) return true;
+
     }
     return false;
 }
