@@ -332,11 +332,11 @@ bool canBlockSecondDiagonalCheck(int pieceSquare, int kingSquare, int attackingP
 
     if (pieceDefender & (ROOK + QUEEN)) {
         int firstIntersectionSquare =
-                pieceSquare + (ranksBetweenAttackerAndDefender - filesBetweenAttackerAndDefender) * 8;
+                pieceSquare + (ranksBetweenAttackerAndDefender + filesBetweenAttackerAndDefender) * 8;
         int secondIntersectionSquare = pieceSquare + filesBetweenAttackerAndDefender - ranksBetweenAttackerAndDefender;
         if (attackingPieceSquare < kingSquare) {
             firstIntersectionSquare =
-                    pieceSquare + (ranksBetweenAttackerAndDefender + filesBetweenAttackerAndDefender) * 8;
+                    pieceSquare + (ranksBetweenAttackerAndDefender - filesBetweenAttackerAndDefender) * 8;
             secondIntersectionSquare = pieceSquare + filesBetweenAttackerAndDefender + ranksBetweenAttackerAndDefender;
         }
 
