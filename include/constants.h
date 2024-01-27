@@ -16,6 +16,12 @@ int SIG_pin = 35;
 // Peak value to treat sensor as detected
 float peakValue = 1.8;
 
+// WiFi constants
+const char* SSID = "shushval5G";
+const char* PASSWORD = "tp-link08752!";
+
+int GAME_ID;
+
 #include <LiquidCrystal_I2C.h>
 LiquidCrystal_I2C lcd(0x27, 16, 2);  // set the LCD address to 0x3F for 16 chars and 2 line display
 unsigned long positionsHistory[MAX_POSITIONS];

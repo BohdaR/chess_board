@@ -9,6 +9,7 @@
 #include "../include/disambiguation.h"
 #include "../include/clock.h"
 #include "../include/move_registration.h"
+#include "../include/api.h"
 
 void verifyPosition() {
     for (int i = 0; i < 64; i++) {
@@ -67,6 +68,8 @@ void setup() {
 
     lcd.clear();
     lcd.print("White to move!");
+    connectToWiFi();
+    createNewGame();
 }
 
 void loop() {

@@ -8,6 +8,7 @@
 #include "disambiguation.h"
 #include "threefold_repetition.h"
 #include "clock.h"
+#include "api.h"
 
 String getMoveNotation(int fromSquare, int toSquare, MOVE_TYPES moveTypes, int disambiguation) {
     int piece = BIT_BOARD[toSquare];
@@ -141,7 +142,8 @@ void makeMove(int fromSquare, int toSquare, MOVE_TYPES moveTypes) {
     String moveNotation = getMoveNotation(fromSquare, toSquare, moveTypes, disambiguation);
 //    lcd.setCursor(0, 1);
 //    lcd.print(moveNotation);
-    Serial.println(moveNotation);
+    sendMove(moveNotation);
+//    Serial.println(moveNotation);
 
     resetPositionDynamics();
     if (!(isSufficientMaterial(WHITE) || isSufficientMaterial(BLACK))) {

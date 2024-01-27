@@ -6,6 +6,7 @@
 #include "helpers.h"
 #include "clock.h"
 #include "threefold_repetition.h"
+#include "api.h"
 
 bool canCastleTheKing(MoveType castlingType) {
     int kingPosition = (PositionDynamics.whoseMove == WHITE) ? WHITE_KING_START_SQUARE : BLACK_KING_START_SQUARE;
@@ -89,7 +90,9 @@ void performCastling(MoveType castlingType, int rookToSquare, int rookFromSquare
     showWhoseMove();
 //    lcd.setCursor(0, 1);
 //    lcd.print(getCastlingNotation(castlingType, PositionDynamics.moveTypes));
-    Serial.println(getCastlingNotation(castlingType, PositionDynamics.moveTypes));
+    String castlingNotation = getCastlingNotation(castlingType, PositionDynamics.moveTypes);
+//    Serial.println(castlingNotation);
+    sendMove(castlingNotation);
 
     resetPositionDynamics();
 }
