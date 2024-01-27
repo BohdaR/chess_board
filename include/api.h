@@ -88,14 +88,36 @@ void createNewGame() {
     setGameId(response);
 }
 
-void sendMove(String move) {
+void sendMoveTask(void *parameter) {
+    // Create JSON document
     JsonDocument jsonDoc;
     jsonDoc["game_id"] = GAME_ID;
-    jsonDoc["move"] = move;
+    jsonDoc["move"] = currentMove;
     jsonDoc["move_side"] = PositionDynamics.whoseMove;
+
+    // Serialize JSON to string
     String jsonData;
     serializeJson(jsonDoc, jsonData);
+
+    // Perform HTTP POST
     post(HOST_NAME + "/write_move", jsonData);
+
+    // Delete the task when done
+    vTaskDelete(NULL);
+}
+
+// Function to trigger the move sending task
+void sendMove(String move) {
+    // Set current move
+    currentMove = move;
+    xTaskCreate(
+        sendMoveTask,       // Function to run
+        "SendMoveTask",     // Task name
+        8192,               // Stack size (bytes)
+        NULL,               // Task parameters (pointer to the move string)
+        1,                  // Priority
+        NULL                // Task handle
+    );
 }
 
 #endif

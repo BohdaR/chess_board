@@ -21,6 +21,7 @@ const char* SSID = "shushval5G";
 const char* PASSWORD = "tp-link08752!";
 
 int GAME_ID;
+String currentMove;
 
 #include <LiquidCrystal_I2C.h>
 LiquidCrystal_I2C lcd(0x27, 16, 2);  // set the LCD address to 0x3F for 16 chars and 2 line display
