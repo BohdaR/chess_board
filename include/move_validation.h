@@ -213,12 +213,10 @@ bool canAttackTheKing(int pieceSquare, int kingSquare) {
         case ROOK:
             return isPseudoLegalRookMove(pieceSquare, kingSquare);
         case PAWN:
-            if ((BIT_BOARD[kingSquare] & WHITE) && rankDifference == -1 && abs(fileDifference) == 1) {
-                return true;
-            }
-            if ((BIT_BOARD[kingSquare] & BLACK) && rankDifference == 1 && abs(fileDifference) == 1) {
-                return true;
-            }
+            if ((BIT_BOARD[kingSquare] & WHITE) && rankDifference == -1 && abs(fileDifference) == 1) return true;
+
+            if ((BIT_BOARD[kingSquare] & BLACK) && rankDifference == 1 && abs(fileDifference) == 1) return true;
+
             break;
         case KNIGHT:
             return isPseudoLegalKnightMove(pieceSquare, kingSquare);
