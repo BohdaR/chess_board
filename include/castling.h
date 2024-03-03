@@ -92,7 +92,11 @@ void performCastling(MoveType castlingType, int rookToSquare, int rookFromSquare
 //    lcd.print(getCastlingNotation(castlingType, PositionDynamics.moveTypes));
     String castlingNotation = getCastlingNotation(castlingType, PositionDynamics.moveTypes);
 //    Serial.println(castlingNotation);
-    sendMove(castlingNotation);
+    if (rookFromSquare > rookToSquare) {
+        sendMove(castlingNotation, rookToSquare - 1, rookToSquare + 1, true);
+    } else {
+        sendMove(castlingNotation, rookToSquare + 1, rookToSquare - 1, true);
+    }
 
     resetPositionDynamics();
 }

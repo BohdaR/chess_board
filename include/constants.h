@@ -2,6 +2,9 @@
 #define constants_h
 #define MAX_POSITIONS 100
 
+#include "Arduino.h"
+#include <ArduinoJson.h>
+
 //Mux control pins
 int s0 = 32;
 int s1 = 33;
@@ -21,7 +24,8 @@ const char* SSID = "shushval5G";
 const char* PASSWORD = "tp-link08752!";
 
 int GAME_ID;
-String currentMove;
+JsonDocument currentMove;
+int taskPriority = 0;
 
 #include <LiquidCrystal_I2C.h>
 LiquidCrystal_I2C lcd(0x27, 16, 2);  // set the LCD address to 0x3F for 16 chars and 2 line display

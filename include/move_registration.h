@@ -15,9 +15,9 @@ String getMoveNotation(int fromSquare, int toSquare, MOVE_TYPES moveTypes, int d
     String square = getPieceLatter(piece) + getSquare(toSquare);
 
     if (moveTypes.capture) {
-        if (piece & PAWN) {
+        if ((piece & PAWN) || ((piece & QUEEN) && moveTypes.promotion)) {
             char previousFileLetter = getFileLetter(fromSquare);
-            square = String(previousFileLetter) + "x" + square;
+            square = String(previousFileLetter) + "x" + getSquare(toSquare);
         } else {
             square = String(square[0]) + "x" + square.substring(1, -1);
         }
@@ -27,12 +27,13 @@ String getMoveNotation(int fromSquare, int toSquare, MOVE_TYPES moveTypes, int d
 
     square = String(square[0]) + disambiguationNotation + square.substring(1, -1);
 
+    if (moveTypes.promotion) {
+        square = square.substring(0, -1) + "=Q";
+    }
+
     if (moveTypes.checkmate) {
         square += "#";
         return square;
-    }
-    if (moveTypes.promotion) {
-        square = square.substring(1, -1) + "=Q";
     }
     if (moveTypes.check) {
         square += "+";
@@ -50,17 +51,6 @@ void makeMove(int fromSquare, int toSquare, MOVE_TYPES moveTypes) {
     updatePosition(fromSquare, toSquare);
     savePosition();
 
-    if (currentPositionIndex == MAX_POSITIONS) {
-        PositionDynamics.moveTypes.draw = true;
-        showDrawMessage("50 moves rule!");
-        return;
-    }
-
-    if (isTreeFoldRepetition()) {
-        PositionDynamics.moveTypes.draw = true;
-        showDrawMessage("Threefold!");
-        return;
-    }
     if (PositionDynamics.castlingRights & FULL_CASTLING_RIGHTS) {
         switch (fromSquare) {
             case 0:
@@ -94,26 +84,39 @@ void makeMove(int fromSquare, int toSquare, MOVE_TYPES moveTypes) {
 
     if (PositionDynamics.whoseMove == WHITE) {
         if (BIT_BOARD[toSquare] & PAWN && toSquare / 8 == 7) {
-            BIT_BOARD[toSquare] = WHITE_QUEEN;
             moveTypes.promotion = true;
+            BIT_BOARD[toSquare] = WHITE_QUEEN;
         }
         if (BIT_BOARD[toSquare] & PAWN && (toSquare - fromSquare) == 16) {
             PositionDynamics.enPassantSquare = toSquare - 8;
         }
-        moveTypes.check = isKingInCheck(blackKingSquare);
-        moveTypes.checkmate = isCheckMate(blackKingSquare);
-        PositionDynamics.moveTypes.checkmate = moveTypes.checkmate;
     } else {
         if (BIT_BOARD[toSquare] & PAWN && toSquare / 8 == 0) {
-            BIT_BOARD[toSquare] = BLACK_QUEEN;
             moveTypes.promotion = true;
+            BIT_BOARD[toSquare] = BLACK_QUEEN;
         }
         if (BIT_BOARD[toSquare] & PAWN && (fromSquare - toSquare) == 16) {
             PositionDynamics.enPassantSquare = toSquare + 8;
         }
-        moveTypes.check = isKingInCheck(whiteKingSquare);
-        moveTypes.checkmate = isCheckMate(whiteKingSquare);
-        PositionDynamics.moveTypes.checkmate = moveTypes.checkmate;
+    }
+
+    moveTypes.check = isKingInCheck(getOppositeColorKingSquare());
+    moveTypes.checkmate = isCheckMate(getOppositeColorKingSquare());
+    PositionDynamics.moveTypes.checkmate = moveTypes.checkmate;
+
+    String moveNotation = getMoveNotation(fromSquare, toSquare, moveTypes, disambiguation);
+    sendMove(moveNotation, fromSquare, toSquare, false);
+
+    if (currentPositionIndex == MAX_POSITIONS) {
+        PositionDynamics.moveTypes.draw = true;
+        showDrawMessage("50 moves rule!");
+        return;
+    }
+
+    if (isTreeFoldRepetition()) {
+        PositionDynamics.moveTypes.draw = true;
+        showDrawMessage("Threefold!");
+        return;
     }
 
     if (isStalemate(getOppositeColorKingSquare())) {
@@ -134,21 +137,17 @@ void makeMove(int fromSquare, int toSquare, MOVE_TYPES moveTypes) {
         }
     }
 
+    if (!(isSufficientMaterial(WHITE) || isSufficientMaterial(BLACK))) {
+        showDrawMessage("Draw!");
+    }
+
     applyIncrement();
     toggleWhoseMove();
     if (!moveTypes.checkmate) {
         showWhoseMove();
     }
-    String moveNotation = getMoveNotation(fromSquare, toSquare, moveTypes, disambiguation);
-//    lcd.setCursor(0, 1);
-//    lcd.print(moveNotation);
-    sendMove(moveNotation);
-//    Serial.println(moveNotation);
 
     resetPositionDynamics();
-    if (!(isSufficientMaterial(WHITE) || isSufficientMaterial(BLACK))) {
-        showDrawMessage("Draw!");
-    }
 }
 
 #endif

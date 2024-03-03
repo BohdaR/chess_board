@@ -3,7 +3,6 @@
 
 #include <WiFi.h>
 #include <HTTPClient.h>
-#include <ArduinoJson.h>
 #include "Arduino.h"
 #include "constants.h"
 
@@ -35,6 +34,10 @@ JsonDocument toJson(String jsonString) {
 }
 
 String post(const String url, const String postData) {
+
+    if (WiFi.status() != WL_CONNECTED) {
+        connectToWiFi();
+    }
     // Create an HTTPClient object
     HTTPClient http;
 
@@ -66,7 +69,7 @@ String post(const String url, const String postData) {
 
         // Close the connection
         http.end();
-
+        post(url, postData);
         return String();
     }
 }
@@ -83,41 +86,52 @@ void setGameId(const String response) {
 }
 
 void createNewGame() {
-    String url = HOST_NAME + "/create_game";
+    String url = HOST_NAME + "/chess_games";
     String response = post(url, "");
     setGameId(response);
 }
 
 void sendMoveTask(void *parameter) {
-    // Create JSON document
-    JsonDocument jsonDoc;
-    jsonDoc["game_id"] = GAME_ID;
-    jsonDoc["move"] = currentMove;
-    jsonDoc["move_side"] = PositionDynamics.whoseMove;
+    // Cast the parameter to the correct type
+    String* jsonDataPtr = (String*)parameter;
 
-    // Serialize JSON to string
-    String jsonData;
-    serializeJson(jsonDoc, jsonData);
+    // Get the JSON data from the pointer
+    String jsonData = *jsonDataPtr;
 
     // Perform HTTP POST
-    post(HOST_NAME + "/write_move", jsonData);
+    post(HOST_NAME + "/chess_moves", jsonData);
+
+    // Free the dynamically allocated memory
+    delete jsonDataPtr;
 
     // Delete the task when done
     vTaskDelete(NULL);
 }
 
 // Function to trigger the move sending task
-void sendMove(String move) {
+void sendMove(String moveNotation, int fromSquare, int toSquare, bool castling) {
     // Set current move
-    currentMove = move;
+    JsonDocument currentMove;
+    currentMove["chess_game_id"] = GAME_ID;
+    currentMove["notation"] = moveNotation;
+    currentMove["from_square"] = fromSquare;
+    currentMove["to_square"] = toSquare;
+    currentMove["move_side"] = PositionDynamics.whoseMove;
+    currentMove["castling"] = castling;
+
+    // Serialize JSON to string
+    String* jsonDataPtr = new String();
+    serializeJson(currentMove, *jsonDataPtr);
+
     xTaskCreate(
         sendMoveTask,       // Function to run
         "SendMoveTask",     // Task name
         8192,               // Stack size (bytes)
-        NULL,               // Task parameters (pointer to the move string)
-        1,                  // Priority
+        (void*)jsonDataPtr, // Task parameters (pointer to the move string)
+        taskPriority,       // Priority
         NULL                // Task handle
     );
+    taskPriority++;
 }
 
 #endif
