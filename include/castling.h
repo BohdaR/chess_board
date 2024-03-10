@@ -7,6 +7,7 @@
 #include "clock.h"
 #include "threefold_repetition.h"
 #include "api.h"
+#include "sd_card.h"
 
 bool canCastleTheKing(MoveType castlingType) {
     int kingPosition = (PositionDynamics.whoseMove == WHITE) ? WHITE_KING_START_SQUARE : BLACK_KING_START_SQUARE;
@@ -97,6 +98,8 @@ void performCastling(MoveType castlingType, int rookToSquare, int rookFromSquare
     } else {
         sendMove(castlingNotation, rookToSquare + 1, rookToSquare - 1, true);
     }
+    writeMoveToPGN(castlingNotation);
+    moveNumber++;
 
     resetPositionDynamics();
 }

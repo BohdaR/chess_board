@@ -9,6 +9,7 @@
 #include "threefold_repetition.h"
 #include "clock.h"
 #include "api.h"
+#include "sd_card.h"
 
 String getMoveNotation(int fromSquare, int toSquare, MOVE_TYPES moveTypes, int disambiguation) {
     int piece = BIT_BOARD[toSquare];
@@ -28,7 +29,7 @@ String getMoveNotation(int fromSquare, int toSquare, MOVE_TYPES moveTypes, int d
     square = String(square[0]) + disambiguationNotation + square.substring(1, -1);
 
     if (moveTypes.promotion) {
-        square = square.substring(0, -1) + "=Q";
+        square = square.substring(1, -1) + "=Q";
     }
 
     if (moveTypes.checkmate) {
@@ -106,6 +107,8 @@ void makeMove(int fromSquare, int toSquare, MOVE_TYPES moveTypes) {
 
     String moveNotation = getMoveNotation(fromSquare, toSquare, moveTypes, disambiguation);
     sendMove(moveNotation, fromSquare, toSquare, false);
+    writeMoveToPGN(moveNotation);
+    moveNumber++;
 
     if (currentPositionIndex == MAX_POSITIONS) {
         PositionDynamics.moveTypes.draw = true;

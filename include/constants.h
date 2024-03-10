@@ -5,6 +5,9 @@
 #include "Arduino.h"
 #include <ArduinoJson.h>
 
+// PGN file name
+String FILE_NAME;
+
 //Mux control pins
 int s0 = 32;
 int s1 = 33;
@@ -23,9 +26,13 @@ float peakValue = 1.8;
 const char* SSID = "shushval5G";
 const char* PASSWORD = "tp-link08752!";
 
+bool CONNECTED_TO_INTERNET = false;
+
+const int MAX_ATTEMPT_NUMBER = 3;
+
 int GAME_ID;
 JsonDocument currentMove;
-int taskPriority = 0;
+int moveNumber = 0;
 
 #include <LiquidCrystal_I2C.h>
 LiquidCrystal_I2C lcd(0x27, 16, 2);  // set the LCD address to 0x3F for 16 chars and 2 line display

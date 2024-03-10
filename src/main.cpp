@@ -10,6 +10,7 @@
 #include "../include/clock.h"
 #include "../include/move_registration.h"
 #include "../include/api.h"
+#include "../include/sd_card.h"
 
 void verifyPosition() {
     for (int i = 0; i < 64; i++) {
@@ -69,7 +70,14 @@ void setup() {
     lcd.clear();
     lcd.print("White to move!");
     connectToWiFi();
-    createNewGame();
+    if(!SD.begin()){
+        Serial.println("Card Mount Failed");
+        return;
+    }
+
+    if (CONNECTED_TO_INTERNET) createNewGame(); // API call
+    createDir(SD, "/games");
+    createNewPGN(SD);
 }
 
 void loop() {

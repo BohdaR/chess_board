@@ -13,14 +13,20 @@ void connectToWiFi() {
     WiFi.begin(SSID, PASSWORD);
     Serial.println("\nConnecting");
 
-    while(WiFi.status() != WL_CONNECTED){
-        Serial.print(".");
-        delay(100);
+    // Try to connect to the Wi-Fi
+    for(int i = 0; i < 30; i++) {
+        if (WiFi.status() != WL_CONNECTED) {
+            Serial.print(".");
+            delay(100);
+        } else {
+            CONNECTED_TO_INTERNET = true;
+            Serial.println("\nConnected to the WiFi network");
+            Serial.print("Local ESP32 IP: ");
+            Serial.println(WiFi.localIP());
+            return;
+        }
     }
-
-    Serial.println("\nConnected to the WiFi network");
-    Serial.print("Local ESP32 IP: ");
-    Serial.println(WiFi.localIP());
+    CONNECTED_TO_INTERNET = false;
 }
 
 JsonDocument toJson(String jsonString) {
@@ -33,7 +39,8 @@ JsonDocument toJson(String jsonString) {
     return jsonDoc;
 }
 
-String post(const String url, const String postData) {
+String post(const String url, const String postData, int attempt = 0) {
+    if (attempt == MAX_ATTEMPT_NUMBER) return String();
 
     if (WiFi.status() != WL_CONNECTED) {
         connectToWiFi();
@@ -69,7 +76,7 @@ String post(const String url, const String postData) {
 
         // Close the connection
         http.end();
-        post(url, postData);
+        post(url, postData, attempt + 1);
         return String();
     }
 }
@@ -92,6 +99,8 @@ void createNewGame() {
 }
 
 void sendMoveTask(void *parameter) {
+    if (!CONNECTED_TO_INTERNET || !GAME_ID) return;
+
     // Cast the parameter to the correct type
     String* jsonDataPtr = (String*)parameter;
 
@@ -110,6 +119,8 @@ void sendMoveTask(void *parameter) {
 
 // Function to trigger the move sending task
 void sendMove(String moveNotation, int fromSquare, int toSquare, bool castling) {
+    if (!CONNECTED_TO_INTERNET || !GAME_ID) return;
+
     // Set current move
     JsonDocument currentMove;
     currentMove["chess_game_id"] = GAME_ID;
@@ -128,10 +139,9 @@ void sendMove(String moveNotation, int fromSquare, int toSquare, bool castling) 
         "SendMoveTask",     // Task name
         8192,               // Stack size (bytes)
         (void*)jsonDataPtr, // Task parameters (pointer to the move string)
-        taskPriority,       // Priority
+        moveNumber,         // Priority
         NULL                // Task handle
     );
-    taskPriority++;
 }
 
 #endif
