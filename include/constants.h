@@ -2,6 +2,8 @@
 #define constants_h
 #define MAX_POSITIONS 100
 
+#include "Arduino.h"
+
 //Mux control pins
 int s0 = 32;
 int s1 = 33;

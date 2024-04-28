@@ -477,6 +477,299 @@ void should_check_pseudo_legal_move(void) {
     // There is no need to test pawn since we already tested it with each piece separately
 }
 
+// Test canAttackTheKing function with knights
+void knight_should_attack_the_king(void) {
+    int testWhiteKingSquare = 27;
+    // place white king on d4
+    BIT_BOARD[whiteKingSquare] = EMPTY;
+    BIT_BOARD[testWhiteKingSquare] = WHITE_KING;
+
+    // Check if black knight can attack the white king
+    for (int offset: KNIGHT_MOVE_OFFSETS) {
+        int testSquare = testWhiteKingSquare + offset;
+        // place black knight on the test square
+        BIT_BOARD[testSquare] = BLACK_KNIGHT;
+
+        TEST_ASSERT_TRUE(canAttackTheKing(testSquare, testWhiteKingSquare));
+
+        // clear the square
+        BIT_BOARD[testSquare] = EMPTY;
+    }
+
+    // place white king back
+    BIT_BOARD[whiteKingSquare] = WHITE_KING;
+    BIT_BOARD[testWhiteKingSquare] = EMPTY;
+}
+
+// Test canAttackTheKing function with bishops and queens
+void bishop_should_attack_the_king(void) {
+    // here we will test the shortest and middle range
+    const int testSquares[8] = {9, 13, 54, 41, 34, 36, 18, 20}; // b2, f2, g7, b6, c5, e5, c3, e3
+    int testWhiteKingSquare = 27;
+    // place white king on d4
+    BIT_BOARD[whiteKingSquare] = EMPTY;
+    BIT_BOARD[testWhiteKingSquare] = WHITE_KING;
+
+    // Check if black bishop can attack the white king
+    for (int testSquare: testSquares) {
+        // place black bishop on the test square
+        BIT_BOARD[testSquare] = BLACK_BISHOP;
+
+        // test bishop attack
+        TEST_ASSERT_TRUE(canAttackTheKing(testSquare, testWhiteKingSquare));
+
+        // test queen attack
+        BIT_BOARD[testSquare] = BLACK_QUEEN;
+        TEST_ASSERT_TRUE(canAttackTheKing(testSquare, testWhiteKingSquare));
+
+        // clear the square
+        BIT_BOARD[testSquare] = EMPTY;
+    }
+
+    // place white king back
+    BIT_BOARD[whiteKingSquare] = WHITE_KING;
+    BIT_BOARD[testWhiteKingSquare] = EMPTY;
+
+    // here we test the longest attack range
+    testWhiteKingSquare = 0;
+    int testBlackKingSquare = 63;
+
+    // Remove pawns
+    BIT_BOARD[9] = EMPTY;
+    BIT_BOARD[54] = EMPTY;
+
+    BIT_BOARD[whiteKingSquare] = EMPTY;
+    BIT_BOARD[testWhiteKingSquare] = WHITE_KING;
+
+    BIT_BOARD[63] = BLACK_BISHOP;
+    TEST_ASSERT_TRUE(canAttackTheKing(63, testWhiteKingSquare));
+
+    BIT_BOARD[63] = BLACK_QUEEN;
+    TEST_ASSERT_TRUE(canAttackTheKing(63, testWhiteKingSquare));
+
+    // place black king on the target square
+    BIT_BOARD[blackKingSquare] = EMPTY;
+    BIT_BOARD[testBlackKingSquare] = BLACK_KING;
+
+    BIT_BOARD[0] = WHITE_BISHOP;
+    TEST_ASSERT_TRUE(canAttackTheKing(0, testBlackKingSquare));
+
+    BIT_BOARD[0] = WHITE_QUEEN;
+    TEST_ASSERT_TRUE(canAttackTheKing(0, testBlackKingSquare));
+
+    // Reset the board
+    resetBitBoard();
+
+    testWhiteKingSquare = 7;
+    testBlackKingSquare = 56;
+
+    // Remove pawns
+    BIT_BOARD[14] = EMPTY;
+    BIT_BOARD[49] = EMPTY;
+
+    BIT_BOARD[whiteKingSquare] = EMPTY;
+    BIT_BOARD[testWhiteKingSquare] = WHITE_KING;
+
+    BIT_BOARD[56] = BLACK_BISHOP;
+    TEST_ASSERT_TRUE(canAttackTheKing(56, testWhiteKingSquare));
+
+    BIT_BOARD[56] = BLACK_QUEEN;
+    TEST_ASSERT_TRUE(canAttackTheKing(56, testWhiteKingSquare));
+
+    // place black king on the target square
+    BIT_BOARD[blackKingSquare] = EMPTY;
+    BIT_BOARD[testBlackKingSquare] = BLACK_KING;
+
+    BIT_BOARD[7] = WHITE_BISHOP;
+    TEST_ASSERT_TRUE(canAttackTheKing(7, testBlackKingSquare));
+
+    BIT_BOARD[7] = WHITE_QUEEN;
+    TEST_ASSERT_TRUE(canAttackTheKing(7, testBlackKingSquare));
+
+    resetBitBoard();
+}
+
+// Test canAttackTheKing function with rooks and queens
+void rook_should_attack_the_king(void) {
+    // here we will test the shortest and middle range
+    const int testSquares[8] = {19, 26, 35, 28, 11, 24, 31, 51}; // d3, c4, d5, e4, d2, a4, h4, d7
+    int testWhiteKingSquare = 27;
+    // place white king on d4
+    BIT_BOARD[whiteKingSquare] = EMPTY;
+    BIT_BOARD[testWhiteKingSquare] = WHITE_KING;
+
+    // Check if black rook can attack the white king
+    for (int testSquare: testSquares) {
+        // place black rook on the test square
+        BIT_BOARD[testSquare] = BLACK_ROOK;
+
+        // test rook attack
+        TEST_ASSERT_TRUE(canAttackTheKing(testSquare, testWhiteKingSquare));
+
+        // test queen attack
+        BIT_BOARD[testSquare] = BLACK_QUEEN;
+        TEST_ASSERT_TRUE(canAttackTheKing(testSquare, testWhiteKingSquare));
+
+        // clear the square
+        BIT_BOARD[testSquare] = EMPTY;
+    }
+
+    // place white king back
+    BIT_BOARD[whiteKingSquare] = WHITE_KING;
+    BIT_BOARD[testWhiteKingSquare] = EMPTY;
+
+    // here we test the longest attack range
+    clearBoard();
+    int testSquare = blackKingSquare;
+    int testBlackKingSquare = blackKingSquare + 1;
+
+    BIT_BOARD[whiteKingSquare] = WHITE_KING;
+    BIT_BOARD[testBlackKingSquare] = BLACK_KING;
+
+    BIT_BOARD[testSquare] = BLACK_ROOK;
+    TEST_ASSERT_TRUE(canAttackTheKing(testSquare, whiteKingSquare));
+
+    BIT_BOARD[testSquare] = BLACK_QUEEN;
+    TEST_ASSERT_TRUE(canAttackTheKing(testSquare, whiteKingSquare));
+
+    testSquare = whiteKingSquare + 1;
+
+    BIT_BOARD[testSquare] = WHITE_ROOK;
+    TEST_ASSERT_TRUE(canAttackTheKing(testSquare, testBlackKingSquare));
+
+    BIT_BOARD[testSquare] = WHITE_QUEEN;
+    TEST_ASSERT_TRUE(canAttackTheKing(testSquare, testBlackKingSquare));
+
+    resetBitBoard();
+
+    testWhiteKingSquare = 24;
+    testBlackKingSquare = 39;
+    testSquare = 31;
+
+    BIT_BOARD[testWhiteKingSquare] = WHITE_KING;
+    BIT_BOARD[testBlackKingSquare] = BLACK_KING;
+
+    BIT_BOARD[testSquare] = BLACK_ROOK;
+    TEST_ASSERT_TRUE(canAttackTheKing(testSquare, testWhiteKingSquare));
+
+    BIT_BOARD[testSquare] = BLACK_QUEEN;
+    TEST_ASSERT_TRUE(canAttackTheKing(testSquare, testWhiteKingSquare));
+
+    testSquare = 32;
+
+    BIT_BOARD[testSquare] = WHITE_ROOK;
+    TEST_ASSERT_TRUE(canAttackTheKing(testSquare, testBlackKingSquare));
+
+    BIT_BOARD[testSquare] = WHITE_QUEEN;
+    TEST_ASSERT_TRUE(canAttackTheKing(testSquare, testBlackKingSquare));
+
+    resetBitBoard();
+}
+
+// Test canAttackTheKing function with pawn
+void pawn_should_attack_the_king(void) {
+    int testSquare = 51;
+    BIT_BOARD[testSquare] = WHITE_PAWN;
+    TEST_ASSERT_TRUE(canAttackTheKing(testSquare, blackKingSquare));
+
+    testSquare = 53;
+    BIT_BOARD[testSquare] = WHITE_PAWN;
+    TEST_ASSERT_TRUE(canAttackTheKing(testSquare, blackKingSquare));
+
+    testSquare = 11;
+    BIT_BOARD[testSquare] = BLACK_PAWN;
+    TEST_ASSERT_TRUE(canAttackTheKing(testSquare, whiteKingSquare));
+
+    testSquare = 13;
+    BIT_BOARD[testSquare] = BLACK_PAWN;
+    TEST_ASSERT_TRUE(canAttackTheKing(testSquare, whiteKingSquare));
+
+    resetBitBoard();
+}
+
+// Test canAttackTheKing function with knights
+void knight_should_not_attack_the_king(void) {
+    int testSquare = 24;
+    int testWhiteKingSquare = 39;
+
+    BIT_BOARD[whiteKingSquare] = EMPTY;
+    BIT_BOARD[testWhiteKingSquare] = WHITE_KING;
+    BIT_BOARD[testSquare] = BLACK_KNIGHT;
+    TEST_ASSERT_FALSE(canAttackTheKing(testSquare, testWhiteKingSquare));
+
+    testSquare = 39;
+    testWhiteKingSquare = 24;
+
+    BIT_BOARD[testWhiteKingSquare] = WHITE_KING;
+    BIT_BOARD[testSquare] = BLACK_KNIGHT;
+    TEST_ASSERT_FALSE(canAttackTheKing(testSquare, testWhiteKingSquare));
+
+    resetBitBoard();
+}
+
+// Test canAttackTheKing function with queens
+void queen_should_not_attack_the_king(void) {
+    int testKingSquare = 27; // d4
+    const int testSquares[14] = {41, 45, 9, 13, 11, 24, 31, 51, 16, 39, 50, 13, -1, 65};
+    // place white king on d4
+    BIT_BOARD[whiteKingSquare] = EMPTY;
+    BIT_BOARD[testKingSquare] = WHITE_KING;
+
+    BIT_BOARD[19] = WHITE_PAWN;
+    BIT_BOARD[26] = WHITE_PAWN;
+    BIT_BOARD[35] = WHITE_PAWN;
+    BIT_BOARD[28] = WHITE_PAWN;
+    BIT_BOARD[34] = WHITE_PAWN;
+    BIT_BOARD[36] = WHITE_PAWN;
+    BIT_BOARD[18] = WHITE_PAWN;
+    BIT_BOARD[20] = WHITE_PAWN;
+
+    // Check if black rook can attack the white king
+    for (int testSquare: testSquares) {
+        // place black rook on the test square
+        BIT_BOARD[testSquare] = BLACK_ROOK;
+
+        // test rook attack
+        TEST_ASSERT_FALSE(canAttackTheKing(testSquare, testKingSquare));
+
+        // test queen attack
+        BIT_BOARD[testSquare] = BLACK_QUEEN;
+        TEST_ASSERT_FALSE(canAttackTheKing(testSquare, testKingSquare));
+
+        // test bishop attack
+        BIT_BOARD[testSquare] = BLACK_BISHOP;
+        TEST_ASSERT_FALSE(canAttackTheKing(testSquare, testKingSquare));
+
+        // clear the square
+        BIT_BOARD[testSquare] = EMPTY;
+    }
+
+    resetBitBoard();
+}
+
+// Test canAttackTheKing function with pawns
+void pawn_should_not_attack_the_king(void) {
+    int testKingSquare = 39;
+    int testSquare = 48;
+
+    BIT_BOARD[whiteKingSquare] = EMPTY;
+    BIT_BOARD[testKingSquare] = WHITE_KING;
+
+    TEST_ASSERT_FALSE(canAttackTheKing(testSquare, testKingSquare));
+
+    resetBitBoard();
+
+    testSquare = 15;
+    testKingSquare = 24;
+
+    BIT_BOARD[blackKingSquare] = EMPTY;
+    BIT_BOARD[testKingSquare] = BLACK_KING;
+
+    TEST_ASSERT_FALSE(canAttackTheKing(testSquare, testKingSquare));
+
+    resetBitBoard();
+}
+
 int runUnityTests(void) {
     UNITY_BEGIN();
     RUN_TEST(square_should_be_withing_the_board);
@@ -496,6 +789,10 @@ int runUnityTests(void) {
     RUN_TEST(should_be_on_the_same_file);
     RUN_TEST(should_not_be_on_the_same_file);
 
+    // test for unexpected input for on the same line functions
+    RUN_TEST(should_handle_unexpected_input);
+
+    // tests for isPseudoLegal function
     RUN_TEST(should_check_pseudo_legal_knight_move);
     RUN_TEST(should_check_pseudo_legal_pawn_move);
     RUN_TEST(should_check_pseudo_legal_king_move);
@@ -504,7 +801,16 @@ int runUnityTests(void) {
     RUN_TEST(should_check_pseudo_legal_queen_move);
     RUN_TEST(should_check_pseudo_legal_move);
 
-    RUN_TEST(should_handle_unexpected_input);
+    // tests for canAttackTheKing function
+    RUN_TEST(knight_should_attack_the_king);
+    RUN_TEST(bishop_should_attack_the_king);
+    RUN_TEST(rook_should_attack_the_king);
+    RUN_TEST(pawn_should_attack_the_king);
+
+    RUN_TEST(knight_should_not_attack_the_king);
+    RUN_TEST(queen_should_not_attack_the_king);
+    RUN_TEST(pawn_should_not_attack_the_king);
+
     return UNITY_END();
 }
 
