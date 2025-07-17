@@ -28,7 +28,7 @@ int getRankNumber(int squareIndex) {
 }
 
 String getSquare(int squareIndex) {
-    return String(getFileLetter(squareIndex)) + String(getRankNumber(squareIndex));
+    return String(1, getFileLetter(squareIndex)) + String(1, getRankNumber(squareIndex));
 }
 
 int getPieceColor(int piece) {

@@ -1,7 +1,6 @@
 #ifndef CLOCK_H
 #define CLOCK_H
 
-#include "Arduino.h"
 #include "constants.h"
 #include "helpers.h"
 

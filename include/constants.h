@@ -1,9 +1,19 @@
 #ifndef constants_h
 #define constants_h
-#define MAX_POSITIONS 100
 
-#include "Arduino.h"
-#include <ArduinoJson.h>
+#ifdef TEST_MODE
+    #include <iostream>
+    using String = std::string;
+    #include "mocks/lcd_mock.h"
+    #include "mocks/arduino_mock.h"
+#else
+    #include <LiquidCrystal_I2C.h>
+    #include "Arduino.h"
+    #include <ArduinoJson.h>
+    JsonDocument currentMove;
+#endif
+
+#define MAX_POSITIONS 100
 
 // PGN file name
 String FILE_NAME;
@@ -31,10 +41,8 @@ bool CONNECTED_TO_INTERNET = false;
 const int MAX_ATTEMPT_NUMBER = 3;
 
 int GAME_ID;
-JsonDocument currentMove;
 int moveNumber = 0;
 
-#include <LiquidCrystal_I2C.h>
 LiquidCrystal_I2C lcd(0x27, 16, 2);  // set the LCD address to 0x3F for 16 chars and 2 line display
 unsigned long positionsHistory[MAX_POSITIONS];
 

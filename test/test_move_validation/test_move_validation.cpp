@@ -821,3 +821,7 @@ void setup() {
 void loop() {
 
 }
+
+int main() {
+    runUnityTests();
+}
